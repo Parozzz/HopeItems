@@ -1,0 +1,21 @@
+## YAML Template.
+---
+name: HopeItems
+version: 2.1
+main: it.parozzz.hopeitems.HopeItems
+commands:
+  hopeitems:
+    aliases: [item]
+    Usage: /item
+    Description: Main Command
+permission:
+  item.command.shop:
+    descriptions: Needed for using the shop command
+    default: op
+  item.command.admin:
+    descriptions: Needed for using admin commands
+    default: op
+  item.shop.sign:
+    descriptions: Needed for allow people to put shop sign
+    default: op
+softdepend: [Vault,WorldGuard]

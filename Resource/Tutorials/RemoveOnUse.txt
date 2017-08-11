@@ -1,0 +1,7 @@
+This flag that can be added into the HopeItems creation and allows to add an infite use of the item
+removeOnUse: true
+
+For blocks, will work in a different way. Placing block won't be infinite, but it will be their usage.
+So, if a block have 
+removeOnUse:true
+the first time a player step on it or interact with it, the block will lose their effect.

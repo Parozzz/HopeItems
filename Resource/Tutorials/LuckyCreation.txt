@@ -1,0 +1,19 @@
+
+
+Lucky: #Pick a random reward from the list below. This works only for When:interact and consume 
+  First:
+    preview: 'potion;1;&6Experience &6Potion;&7Gives you some exp' #This item will appear in the GUI
+    custom: ExpPotion #This is an item from this plugin
+    #In here you can use EVERY OTHER THING you find in the plugin
+    command:
+    - 'broadcast %player% won a thing!'
+    chance: 100
+  Second:
+    #In here you can use EVERY OTHER THING you find in the plugin and will be randomly given to the player
+    preview: 'monster_egg;16;&6CustomMob &7Egg;&7What can it be?'
+    custom: ZombieSailor
+    command:
+    - 'broadcast %player% is now healed!'
+    player:
+      - heal:20
+    chance: 200

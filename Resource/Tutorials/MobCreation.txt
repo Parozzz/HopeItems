@@ -1,0 +1,177 @@
+You can also spawn a custom mob when using an item.
+
+You can change the type of the mob
+entity: zombie 
+For 1.8 to 1.10 users http://docs.codelanx.com/Bukkit/1.8/org/bukkit/entity/EntityType.html
+For 1.11+ users https://hub.spigotmc.org/javadocs/spigot/org/bukkit/entity/EntityType.html
+
+You can change the name of the mob
+name: '&cCool Mob'
+
+You can change the health of the mob
+health: 100
+
+You can add potion effects to the mob
+potion:
+    [PotionEffectType ; Duration ; Level]
+  - fire_resistance:300:2
+
+You can change which mob will be the ride (Which mob will be rided by the custom mob)
+ride: spider
+
+For 1.9+ users, attributes can be change.
+Attributes allow you to change
+  - Armor - The resistance of a mob
+  - Armor Thoughness (Only for MC1.11+) - How much the mob Armor will spoil when dropped
+  - Knockback Resistance - How much knockback a mob takes
+  - Movement Speed - How much fast the mob moves
+  - Attack Damage - How much damage the mob does
+
+There are also abilities that can be triggered when the mob is being hit.
+There is a chance system, it consist of a general chance and a per ability chance.
+
+General trigger chance is the chance that an ability can eventually happen.
+Ability trigger chance is the chance that the specific ability will trigger.
+
+So if the general chance will be positive, this does not mean that an ability will effectively
+happen, it does depends on per ability chances
+Ability list:
+        
+          :[PotionEffectType ; Duration(Seconds) ; Level ; TriggerChance]
+    potion:hunger;10;1;50 
+    Add potion effect to who hit
+
+        :[TriggerChance]
+    push:10 
+    Push away to who hit
+    
+    deflect 
+    Deflect arrows. No triggerChance for this, will always happen, also overrides global triggerChance
+        
+          :[Duration(Second) ; TriggerChance]
+    shield:2;25 
+    Generate a shield that last X seconds and make the mob invulnerable
+    
+          :[Damage ; TriggerChance]
+    damage:5;45 
+    Damage the player
+
+           :[FireDuration(Seconds) ; TriggerChance]
+    lighter:5;65 
+    Set the player on fire
+
+          :[ArrowDamage ; ArrowQuantity ; TriggerChance]
+    sniper:0.5;5;35 
+    The mob will shoot arrows to the plyaer
+
+         :[MobType ; MobQuantity ; TriggerChance]
+    spawn:zombie;2;25 
+    Spawn some mobs
+
+Rewards can be given to when the mob is KILLED BY A PLAYER.
+There are three different drop type:
+    - chest
+        The drop will be given through a chest. This will also require a preview
+        item that will be show floating above the chest
+    - player
+        The drop will be directly given to the killed (Dropped if the inventory is full)
+    - drop
+        Items will be simply dropped on the ground
+
+You can add items from the plugin as a reward
+custom
+    [HopeItemName ; Quantity]
+  - Egg;2
+
+You can also add normal items with a simple name and lore
+item: #Drop some items with custom name, lore and 
+    [id;amount;name;lore1;lore2;lore3;...]
+  - 'NAME_TAG;16;&cThis is the item name;&6ItemLore 1;&cItemLore 2;&7ItemLore 3'
+
+You can commands to be executed
+command:
+  - heal %player%
+
+And finally, the chance system. This use a weighted chance system and this mean that
+the final chance (From 0 to 100%) will be the choosen value divided by the sum of all chances
+If one item have 200 and the other 300, the first will be 200/500 (40%) the other 300/500 (60%)
+
+FInally, you can set the equipment of the mob. You configure the equipped item completely
+(Check ItemCreation.txt for reference). You can also add drop chance for the item.
+
+Here an example
+Mob:
+   entity: ZOMBIE #The type of the mob
+   name: '&cCool Zombie' #The mob will have when spawned
+   health: 100 #The health of the mob
+   potion: #Potions Effect the mob will have
+   - fire_resistance:300:2  #[<PotionType>;<duration>;<level>]
+   ride: spider #You can choose if the mob is riding another mob and which mob is riding
+   
+   #Works only for MC1.9+
+   #If you need extra knowledge about attributes, check the official wiki
+   #http://minecraft.gamepedia.com/Attribute
+   Attribute:
+     Armor: 10  #0.0 - 30.0
+     Armor_Toughness: 10.0 #0.0 - 20.0. Works only for MC1.11+
+     Knockback_Resistance: 0.5 #0.0 - 1.0
+     Movement_Speed: 0.23 #0.0 - 1024.0
+     Attack_Damage: 6.0 #0.0 - 2048.0
+     
+   triggerChance: 40 #This is the chance abilities are triggered. This is global and it works for every ability
+   ability: #This are triggered when a player or an arrow hit the mob
+     - potion:hunger;10;1;50 #Add this potion effect [<PotionType>;<duration>;<level>;<triggerChance>]
+     - push:10 #Push away the player [<triggerChance>]
+     - deflect #Deflect arrows. No triggerChance for this, will always happen, also overrides global triggerChance
+     - shield:2;25 #Generate a shield that last X seconds and make the mob invulnerable [<duration>;<triggerChance>]
+     - damage:5;45 #Damage the player [<damage>;<triggerChance>]
+     - lighter:5;65 #Set the player on fire [<fireDuration(seconds)>;<triggerChance>]
+     - sniper:3;5;35 #The mob will shoot arrows to the plyaer [<arrowDamage>;<arrowAmount>;<triggerChance>]
+     - spawn:zombie;2;25 #Spawn some mobs [<mobType>;<amount>;<triggerChance>]
+     - spawn:skeleton;2;25 #Spawn some mobs [<mobType>;<amount>;<triggerChance>]
+     
+   Drop:
+     Reward1:
+       type: chest #You can choose if the drop will be dropped, put in a chest (Respect Worldguard regions) or given directly to the player who killed the mob [chest/player/drop]
+       preview: 'arrow;&cEpic' #This works only if type is chest. [<type>;<floating text>]
+       custom: 
+         - Egg;2 #Add an defined hopeitem as a drop (Will drop the item). Use the name you used to create it [<HopeItemName>;<amount>]
+         - NovaCreeper;1
+       item: #Drop some items with custom name, lore and 
+         - 'NAME_TAG;16;&cThis is the item name;&6ItemLore 1;&cItemLore 2;&7ItemLore 3' #Drop an item [<id>;<amount>;<name>;<lore1>;<lore2>;<lore3>;...]
+         - 'APPLE;16;&cThis is an apple;&6AppleLore 1;&cAppleLore 2;&7AppleLore 3' #Drop an item [<id>;<amount>;<name>;<lore1>;<lore2>;<lore3>;...]
+       command: #This will be executed only if a player have killed the mob
+         - heal %player%
+       chance: 10
+     Reward2:
+       type: chest #You can choose if the drop will be dropped, put in a chest (Respect Worldguard regions. Will drop otherwise) or given directly to the player who killed the mob [chest/player/drop]
+       preview: 'monster_egg;&6Normal' #This works only if type is chest. [<type>;<floating text>]
+       custom: 
+         - NovaCreeper;2 #Add an defined hopeitem as a drop (Will drop the item). Use the name you used to create it [<HopeItemName>;<amount>]
+         - Egg;1
+       item: #Drop some items with custom name and lore 
+         - 'NAME_TAG;16;&cThis is the item name;&6ItemLore 1;&cItemLore 2;&7ItemLore 3' #Drop an item [<id>;<amount>;<name>;<lore1>;<lore2>;<lore3>;...]
+         - 'APPLE;16;&cThis is an apple;&6AppleLore 1;&cAppleLore 2;&7AppleLore 3' #Drop an item [<id>;<amount>;<name>;<lore1>;<lore2>;<lore3>;...]
+       command: #This will be executed only if a player have killed the mob
+         - broadcast %player% has kill a mob!
+       chance: 20
+       
+   Equipment: #You can set the mob equipment
+     Head: #Set the helmet of the mob
+       id: diamond_helmet
+       chance: 10.5 
+     Chest: #Set the chestplate of the mob
+       id: diamond_chestplate
+       chance: 10.5
+     Legs: #Set the leggings of the mob
+       id: diamond_leggings
+       chance: 10.5
+     Feet: #Set the boots of the mob
+       id: diamond_boots
+       chance: 10.5
+     Hand: #Set the hand of the mob
+       id: diamond_sword
+       chance: 10.5
+     Off_Hand: #Set the offhand of the mob [Works only in MC1.9+]
+       id: diamond_axe
+       chance: 10.5
