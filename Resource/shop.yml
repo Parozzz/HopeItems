@@ -1,0 +1,28 @@
+Page1:
+  rows: 1
+  title: "&bCustom Item &f&l1"
+  Items:
+    0,1,2,3:
+      id: STAINED_GLASS_PANE
+      data: 15
+      function: none
+    4:
+      id: monster_egg
+      data: creeper
+      name: "&2Cegg"
+      lore:
+        - "&7Cost: &b&l100K"
+      function: buy
+      cost: 100000
+      item: mobEgg
+    5,6,7:
+      id: STAINED_GLASS_PANE
+      data: 13
+      function: none
+    8:
+      id: arrow
+      name: "&7To Page2"
+      function: shop
+      shop: Page2
+      
+  

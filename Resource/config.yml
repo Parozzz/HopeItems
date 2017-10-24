@@ -1,79 +1,21 @@
-#Setting this value to TRUE will change the item fetching method from standard method to nbt tags method
-# ### ATTENTION ###
-#IF YOU SERVER DOES NOT SUPPORT NBT TAGS, DO NOT SET IT TO TRUE (More performance with nbt)
-#If you switch from normal to nbt, all items will break
-# ### ATTENTION ###
-useNBTTag: false
-Lucky:
-  GUIName: '&7Lucky Rolling'
-  GUIRows: 6
-  GUI:
-    down:
-      id: stained_glass_pane
-      data: 13
-      name: '&7&lVVV'
-      slot: 22;13
-    left:
-      id: stained_glass_pane
-      data: 13
-      name: '&7&l-->'
-      slot: 30;29
-    right:
-      id: stained_glass_pane
-      data: 13
-      name: '&7&l<--'
-      slot: 32;33
-  rollSlot: 45;36;27;18;10;2;3;4;5;6;16;26;35;43;51;50;49;40;31
-  winSlot: 31
-  rolls: 40
-  #Minecraft 1.8 Sounds http://docs.codelanx.com/Bukkit/1.8/org/bukkit/Sound.html
-  #Minecraft 1.9+ Sound https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html (This are 1.12 sounds, so some might not exist. Be carefull)
-#  sound: ENTITY_EXPERIENCE_ORB_PICKUP;1;0.75
-  animationEnabled: true
-
-customMobChestDropExpirationTime: 30 #Seconds. This define how much time the mob drop chest type stay there when not looted. Set to -1 to disable
-customMobChestHologram: 'Expire in: %expire% seconds'
-Shop:
-  enabled: false #Does the shop should be enabled (Vault enabled)
-  guiTitle: '&7Item Shop - &2Page %page%' #The title of the shop GUI
-  costLine: '&7Item Cost: &c%cost%' #This line will be added to the item in the GUI only
-  guiNextItem:
-    id: ARROW
-    name: '&7Next Page'
-  guiBackItem:
-    id: REDSTONE
-    name: '&7Go Back'
-    
-Language:
-  playerCommand: 'That command can only be executed by a player'
-  playerNotFound: '&4That player does not exist'
-  noPermission: '&4Nope'
-  inventoryFull: '&7Your inventory was full &4&l(Item on ground)'
-  
-  #CONDITIONS#
-  conditionCooldown: '&6You need to wait %time%sec for using it again'
-  conditionWrongWorld: '&6This item can only be used in %world%'
-  conditionWrongRegion: '&7This item can only be used in %region%'
-  conditionWrongLevel: '&7You don''t have enough levels. You need %level%'
-  
-  onReload: '&4Plugin Reloaded'
-  reloadCommand: '&7/item reload'
-  
-  listCommand: '&7/item list'
-  removeCommand: '&7/item remove <player> <item> [<quantity>] - &2Remove some items from the player inventory'
-  onItemRemove: '&7%itemname% has been removed from your inventory'
-  
-  wrongItem: '&4That item does not exist'
-  getCommand: '&7/item get <name> [<amount>] - &2Get some items'
-  
-  itemReceived: '&4You received %itemname%'
-  giveCommand: '&7/item give <player> <name> [<amount>] - &2Give items to a player'
-  
-  giveallGiven: '&7You gave %itemname% to every online player'
-  giveallCommand: '&7/item giveall <name> [<amount>] - &2Give items to all online players'
-  #SHOP#
-  shopNotEnabled: '&4The shop is not enabled'
-  notEnoughMoney: '&4You don''t have enough money. You need %cost%'
-  onBuy: '&7You have bought the item for &4%cost%. &7New balance: &6%balance%'
-  onSignShopSetup: '&7You set up a shop sign for HopeItems'
-  shopCommand: '&7/item shop - &2Open the shop GUI'
+Messages:
+  Shop:
+    low_money: "&cYou don't have enough money. &7Needed: &2&l{money}"
+    item_bought: "&fRemains: &2&l{balance}"
+CommandMessages:
+  Help:
+    getitem: "&b/items getitem *itemname* <amount>"
+    giveitem: "&b/items giveitem *player* *itemname* <amount>"
+    shop: "&b/items shop *shopName*"
+    shoplist: "&b/items shoplist"
+    list: "&b/items list"
+    reload: "&b/items reload"
+  Others:
+    wrong_command: "&cWrong command format"
+    wrong_item: "&cThat item name does not exist"
+    player_offline: "&cSelected player is offline"
+    item_received: "&fYou received a %name% &6x%amount%"
+    item_sent: "&fYou sent a hopeitem named %name% &6x%amount% &fto %player%"
+    reloaded: "&2Succesfully reloaded the plugin"
+    reload_fail: "&cSomething went wront during plugin reloading"
+    shop_inexistent: "&cA shop with that does not exist"
