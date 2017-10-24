@@ -35,8 +35,7 @@ public final class ActionBar
         }
         catch(NoSuchMethodException | SecurityException ex) 
         {
-            Logger.getLogger(ActionBar.class.getName()).log(Level.SEVERE, null, ex);
-            ex.printStackTrace(); 
+            Logger.getLogger(ActionBar.class.getSimpleName()).log(Level.SEVERE, null, ex); 
         }
     }
     
@@ -48,7 +47,7 @@ public final class ActionBar
         } 
         catch (IllegalAccessException | IllegalArgumentException | InstantiationException | SecurityException | InvocationTargetException ex)  
         { 
-            ex.printStackTrace(); 
+            Logger.getLogger(ActionBar.class.getSimpleName()).log(Level.SEVERE, null, ex); 
         }
     }
 }

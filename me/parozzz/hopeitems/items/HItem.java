@@ -5,11 +5,9 @@
  */
 package me.parozzz.hopeitems.items;
 
-import java.util.logging.Level;
 import me.parozzz.hopeitems.utilities.reflection.nbt.item.ItemNBT;
 import me.parozzz.hopeitems.utilities.reflection.NBTTagManager.NBTType;
 import me.parozzz.hopeitems.utilities.reflection.nbt.NBTCompound;
-import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 
 /**

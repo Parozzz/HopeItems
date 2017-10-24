@@ -104,7 +104,7 @@ public class API
             } 
             catch (ClassNotFoundException ex) 
             {
-                Logger.getLogger(API.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(API.class.getSimpleName()).log(Level.SEVERE, null, ex);
                 return null;
             }
         }
@@ -117,7 +117,7 @@ public class API
             } 
             catch (ClassNotFoundException ex) 
             {
-                Logger.getLogger(API.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(API.class.getSimpleName()).log(Level.SEVERE, null, ex);
                 return null;
             }
         }
@@ -150,7 +150,7 @@ public class API
                     { 
                         method.setAccessible(true);
                         return method;
-                    }).orElseThrow(() -> new NullPointerException("Method "+name+" does not exist in class "+clazz.getName()));
+                    }).orElseThrow(() -> new NullPointerException("Method "+name+" does not exist in class "+clazz.getSimpleName()));
         }
 
         public static boolean classListEqual(Class<?>[] l1, Class<?>[] l2) 

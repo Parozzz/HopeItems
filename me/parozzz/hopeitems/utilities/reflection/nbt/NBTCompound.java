@@ -35,6 +35,7 @@ public class NBTCompound implements Tags
 
     public <T> T getKey(final String key, final NBTType type, final Class<T> clazz)
     {
+        
         if(clazz==NBTCompound.class)
         {
             return (T) new NBTCompound(Debug.validateMethod(API.getNBT().getCompoundGetter(type), nbtCompound, key));
@@ -54,7 +55,6 @@ public class NBTCompound implements Tags
     public void addTag(final String key, final Tags nbt)
     {
         Debug.validateMethod(API.getNBT().compoundSetNBT, nbtCompound, key, nbt.getNBTObject());
-        //API.getNBT().compoundSetNBT.invoke(nbtCompound, key, nbt.getNBTObject()); 
     }
 
     public boolean hasKey(final String key)

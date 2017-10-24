@@ -5,22 +5,19 @@
  */
 package me.parozzz.hopeitems.shop;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import me.parozzz.hopeitems.Configs;
 import me.parozzz.hopeitems.Dependency;
+import me.parozzz.hopeitems.items.HItem;
 import me.parozzz.hopeitems.items.ItemInfo;
 import me.parozzz.hopeitems.shop.Shop.ShopMessage;
 import me.parozzz.hopeitems.utilities.Debug;
 import me.parozzz.hopeitems.utilities.Utils;
 import me.parozzz.hopeitems.utilities.reflection.nbt.item.ItemNBT;
-import me.parozzz.hopeitems.utilities.reflection.NBTTagManager;
 import me.parozzz.hopeitems.utilities.reflection.NBTTagManager.NBTType;
 import me.parozzz.hopeitems.utilities.reflection.nbt.NBTCompound;
 import org.bukkit.Bukkit;
@@ -39,7 +36,7 @@ public class ShopPage
 {
     public enum ShopFunction
     {
-        NONE, BUY, SHOP;
+        NONE, BUY, SHOP, SELL;
     }
     
     private final static String FUNCTION_NBT="Function";
@@ -74,7 +71,8 @@ public class ShopPage
                 case NONE:
                     break;
                 case BUY:
-                    tag.addValue(COST_NBT, NBTType.DOUBLE, sPath.getDouble("cost"));
+                case SELL:
+                    tag.addValue(COST_NBT, NBTType.DOUBLE, sPath.getDouble("money"));
                     tag.addValue(CUSTOMITEM_NBT, NBTType.STRING, sPath.getString("item"));
                     break;
                 case SHOP:
@@ -118,6 +116,23 @@ public class ShopPage
             case SHOP:
                 Optional.ofNullable(Shop.getInstance().getPageByName(tag.getKey(SHOP_NBT, NBTType.STRING, String.class)))
                         .ifPresent(page -> e.getWhoClicked().openInventory(page.getInventory()));
+                break;
+            case SELL:
+                Optional.ofNullable(Configs.getItemInfo(tag.getKey(CUSTOMITEM_NBT, NBTType.STRING, String.class))).ifPresent(info -> 
+                {
+                    double cost=tag.getKey(COST_NBT, NBTType.DOUBLE, double.class);
+                    
+                    double toGive = Stream.of(e.getWhoClicked().getInventory().getContents()).filter(Objects::nonNull)
+                            .map(HItem::new)
+                            .filter(HItem::isValid)
+                            .filter(h -> h.getStringId().equals(info.getName()))
+                            .mapToDouble(hitem -> 
+                            {
+                                Utils.decreaseItemStack(hitem.getItem(), e.getWhoClicked().getInventory());
+                                return hitem.getItem().getAmount() * cost;
+                            }).sum();
+                    Dependency.eco.depositPlayer((Player)e.getWhoClicked(), toGive);
+                });
                 break;
             case BUY:
                 ItemInfo info=Configs.getItemInfo(tag.getKey(CUSTOMITEM_NBT, NBTType.STRING, String.class));

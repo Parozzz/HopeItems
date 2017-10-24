@@ -9,6 +9,9 @@ import me.parozzz.hopeitems.utilities.Utils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -81,9 +84,15 @@ public class NBTTagManager
             return setterName;
         }
         
+        private static Map<Byte, NBTType> ids;
         public static NBTType getById(final byte id)
         {
-            return Stream.of(NBTType.values()).filter(nbt -> nbt.getId()==id).findFirst().orElseGet(() -> null);
+            return Optional.ofNullable(ids).orElseGet(() -> 
+            {
+                ids = new HashMap<>();
+                Stream.of(NBTType.values()).forEach(type -> ids.put(type.getId(), type));
+                return ids;
+            }).get(id);
         }
     }
     

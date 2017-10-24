@@ -191,17 +191,7 @@ public class ParticleManager
         
         public void spawn(final Player p)
         {
-            packets.forEach(o -> 
-            {
-                try 
-                {
-                    API.getPacketManager().sendPacket(p, o);
-                } 
-                catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) 
-                {
-                    Logger.getLogger(ParticleManager.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            });
+            packets.forEach(o -> API.getPacketManager().sendPacket(p, o));
         }
     }  
 }

@@ -8,7 +8,11 @@ package me.parozzz.hopeitems.utilities.reflection;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import me.parozzz.hopeitems.utilities.reflection.API.ReflectionUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 /**
  *
@@ -21,7 +25,6 @@ public final class PacketManager
     private final Field playerConnection;
     protected PacketManager()
     {
-
         Class<?> CraftPlayer=ReflectionUtils.getCraftbukkitClass("entity.CraftPlayer");
         handle=ReflectionUtils.getMethod(CraftPlayer,"getHandle",new Class[0]);
 
@@ -46,9 +49,18 @@ public final class PacketManager
         return playerConnection.get(handle);
     }
     
-    public void sendPacket(final Player p, final Object packet) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException
+    private Method sendPacket;
+    public void sendPacket(final Player p, final Object packet)
     {
-        Object connection=playerConnection(getHandle(p));
-        ReflectionUtils.getMethod(connection.getClass(), "sendPacket").invoke(connection, packet);
+        try
+        {
+            Object connection=playerConnection(getHandle(p));
+            Optional.ofNullable(sendPacket).orElseGet(() -> sendPacket = ReflectionUtils.getMethod(connection.getClass(), "sendPacket")).invoke(connection, packet);  
+        }
+        catch(IllegalAccessException | IllegalArgumentException | InvocationTargetException t)
+        {
+            Logger.getLogger(PacketManager.class.getSimpleName()).log(Level.SEVERE, null, t);
+        }
+
     }
 }
