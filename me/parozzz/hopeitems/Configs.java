@@ -22,11 +22,13 @@ import me.parozzz.hopeitems.items.ItemInfo;
 import me.parozzz.hopeitems.items.ItemInfo.When;
 import me.parozzz.hopeitems.items.ItemUtils;
 import me.parozzz.hopeitems.items.managers.conditions.ConditionType;
+import me.parozzz.hopeitems.items.managers.cooldown.CooldownManager;
 import me.parozzz.hopeitems.items.managers.explosive.ExplosiveManager;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyManager;
 import me.parozzz.hopeitems.items.managers.mobs.MobManager;
 import me.parozzz.hopeitems.shop.Shop.ShopMessage;
 import me.parozzz.hopeitems.utilities.Debug;
+import me.parozzz.hopeitems.utilities.MCVersion;
 import me.parozzz.hopeitems.utilities.Utils;
 import me.parozzz.hopeitems.utilities.classes.ComplexMapList;
 import me.parozzz.hopeitems.utilities.classes.SimpleMapList;
@@ -80,7 +82,7 @@ public class Configs
             ItemInfo info=new ItemInfo(name, item);
             
             info.removeOnUse=nPath.getBoolean("removeOnUse", false);
-            Optional.of(nPath.getInt("cooldown")).ifPresent(info::setCooldown);
+            Optional.ofNullable(nPath.getConfigurationSection("Cooldown")).map(CooldownManager::new).ifPresent(info::setCooldown);
             nPath.getStringList("when").stream().map(String::toUpperCase).map(When::valueOf).forEach(info::addWhen);
             Optional.ofNullable(nPath.getConfigurationSection("Condition")).ifPresent(cPath -> 
             {
@@ -118,7 +120,7 @@ public class Configs
                 switch(Debug.validateEnum(cPath.getString("type"), RecipeType.class))
                 {
                     case SHAPED:
-                        r=Utils.bukkitVersion("1.12") ? 
+                        r= MCVersion.V1_12.isHigher() ? 
                                 new ShapedRecipe(new NamespacedKey(JavaPlugin.getProvidingPlugin(Configs.class), name), item) : 
                                 new ShapedRecipe(item);
                         
@@ -131,7 +133,7 @@ public class Configs
                         });
                         break;
                     case SHAPELESS:
-                        r=Utils.bukkitVersion("1.12") ? 
+                        r=MCVersion.V1_12.isHigher() ? 
                                 new ShapelessRecipe(new NamespacedKey(JavaPlugin.getProvidingPlugin(Configs.class), name), item) : 
                                 new ShapelessRecipe(item);
                         

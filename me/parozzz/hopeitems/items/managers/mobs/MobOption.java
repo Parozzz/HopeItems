@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import me.parozzz.hopeitems.HopeItems;
 import me.parozzz.hopeitems.items.managers.ManagerUtils;
 import me.parozzz.hopeitems.utilities.Debug;
+import me.parozzz.hopeitems.utilities.MCVersion;
 import me.parozzz.hopeitems.utilities.Utils;
 import me.parozzz.hopeitems.utilities.classes.MapArray;
 import org.bukkit.attribute.Attribute;
@@ -43,7 +44,7 @@ public enum MobOption
         public Consumer<LivingEntity> getConsumer(final String value)
         {
             EntityType ride=EntityType.valueOf(value.toUpperCase());
-            return Utils.bukkitVersion("1.8", "1.9", "1.10")? liv -> liv.setPassenger(liv.getWorld().spawnEntity(liv.getLocation(), ride)) : liv -> liv.addPassenger(liv.getWorld().spawnEntity(liv.getLocation(), ride));
+            return MCVersion.V1_10.isLower() ? liv -> liv.setPassenger(liv.getWorld().spawnEntity(liv.getLocation(), ride)) : liv -> liv.addPassenger(liv.getWorld().spawnEntity(liv.getLocation(), ride));
         }
     },
     POTION{
@@ -65,9 +66,9 @@ public enum MobOption
         @Override
         public Consumer<LivingEntity> getConsumer(final String value)
         {
-            if(Utils.bukkitVersion("1.8"))
+            if(MCVersion.V1_8.isEqual())
             {
-                Logger.getLogger(HopeItems.class.getSimpleName()).log(Level.WARNING, "Mob attributes are not supported in MC1.8");
+                Logger.getLogger(HopeItems.class.getSimpleName()).log(Level.WARNING, "[HopeItems] Mob attributes are not supported in MC1.8");
                 return liv -> {};
             }
             

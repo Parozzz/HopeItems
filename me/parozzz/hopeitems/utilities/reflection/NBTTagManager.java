@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+import me.parozzz.hopeitems.utilities.MCVersion;
 import me.parozzz.hopeitems.utilities.reflection.API.ReflectionUtils;
 /**
  *
@@ -94,6 +95,20 @@ public class NBTTagManager
                 return ids;
             }).get(id);
         }
+        
+        private static Map<Class<?>, NBTType> primitives;
+        public static NBTType getByPrimitive(final Class<?> clazz)
+        {
+            return Optional.ofNullable(primitives).orElseGet(() -> 
+            {
+                primitives = new HashMap<>();
+                Stream.of(NBTType.values()).forEach(type -> 
+                {
+                    primitives.put(type.getPrimitiveClass(), type);
+                });
+                return primitives;
+            }).get(clazz);
+        }
     }
     
     /*
@@ -159,7 +174,7 @@ public class NBTTagManager
         
         Class<?> listClass=NBTType.LIST.getObjectClass();    
         listAddTo=ReflectionUtils.getMethod(listClass, "add", baseClass);
-        listGetType=ReflectionUtils.getMethod(listClass, Utils.bukkitVersion("1.8")? "f" : "g"); 
+        listGetType=ReflectionUtils.getMethod(listClass, MCVersion.V1_8.isEqual()? "f" : "g"); 
         listSize=ReflectionUtils.getMethod(listClass, "size");
         try { listGetBase=ReflectionUtils.getMethod(listClass, "i", int.class); }
         catch(final NullPointerException t) {  }
@@ -167,7 +182,7 @@ public class NBTTagManager
         Class<?> compoundClass=NBTType.COMPOUND.getObjectClass();
         compoundSetNBT=ReflectionUtils.getMethod(compoundClass, "set", String.class, baseClass); 
         compoundKeySet=ReflectionUtils.getMethod(compoundClass, "c");
-        compoundGetTypeByKey=ReflectionUtils.getMethod(compoundClass, Utils.bukkitVersion("1.8") ? "b" : "d", String.class); 
+        compoundGetTypeByKey=ReflectionUtils.getMethod(compoundClass, MCVersion.V1_8.isEqual()? "b" : "d", String.class); 
         compoundHasKey=ReflectionUtils.getMethod(compoundClass, "hasKey", String.class); //Checker
         compoundHasKeyOfType=ReflectionUtils.getMethod(compoundClass, "hasKeyOfType", String.class, int.class);
         compoundRemoveKey=ReflectionUtils.getMethod(compoundClass, "remove", String.class); //Removed

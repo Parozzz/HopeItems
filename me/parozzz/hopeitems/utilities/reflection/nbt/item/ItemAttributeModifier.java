@@ -120,12 +120,12 @@ public class ItemAttributeModifier
         for(int j=0;j<attributeList.size();j++)
         {
             NBTCompound compound=new NBTCompound(attributeList.getTag(j));
-            if(compound.getKey("AttributeName", NBTType.STRING, String.class).equals(attribute.getName()))
+            if(compound.getKey("AttributeName", String.class).equals(attribute.getName()))
             {
                 return new ModifierSnapshot(attribute, 
-                        compound.getKey("Amount", NBTType.DOUBLE, double.class),
-                        Operation.getById(compound.getKey("Operation", NBTType.INT, int.class)),
-                        AttributeSlot.valueOf(compound.getKey("Slot", NBTType.STRING, String.class).toUpperCase()));
+                        compound.getKey("Amount", double.class),
+                        Operation.getById(compound.getKey("Operation", int.class)),
+                        AttributeSlot.valueOf(compound.getKey("Slot", String.class).toUpperCase()));
             }
         }
         return null;
@@ -138,10 +138,10 @@ public class ItemAttributeModifier
         {
             NBTCompound compound=new NBTCompound(attributeList.getTag(j));
             
-            set.add(new ModifierSnapshot(ItemAttribute.getByName(compound.getKey("AttributeName", NBTType.STRING, String.class)), 
-                    compound.getKey("Amount", NBTType.DOUBLE, double.class),
-                    Operation.getById(compound.getKey("Operation", NBTType.INT, int.class)),
-                    AttributeSlot.valueOf(compound.getKey("Slot", NBTType.STRING, String.class).toUpperCase())));
+            set.add(new ModifierSnapshot(ItemAttribute.getByName(compound.getKey("AttributeName", String.class)), 
+                    compound.getKey("Amount", double.class),
+                    Operation.getById(compound.getKey("Operation", int.class)),
+                    AttributeSlot.valueOf(compound.getKey("Slot", String.class).toUpperCase())));
         }
         return set;
     }
@@ -152,9 +152,9 @@ public class ItemAttributeModifier
         {
             NBTCompound compound=new NBTCompound(attributeList.getTag(j));
             
-            if(compound.getKey("AttributeName", NBTType.STRING, String.class).equals(attribute.getName()))
+            if(compound.getKey("AttributeName", String.class).equals(attribute.getName()))
             {
-                compound.addValue("Amount", NBTType.DOUBLE, value);
+                compound.setValue("Amount", NBTType.DOUBLE, value);
                 return;
             }
         }
@@ -163,32 +163,32 @@ public class ItemAttributeModifier
     public void addSnapshot(final ModifierSnapshot snap)
     {
         NBTCompound modifierCompound=new NBTCompound();
-        modifierCompound.addValue("AttributeName", NBTType.STRING, snap.getType().getName());
-        modifierCompound.addValue("Name", NBTType.STRING, snap.getType().getName());
-        modifierCompound.addValue("Amount", NBTType.DOUBLE, snap.getAmount());
-        modifierCompound.addValue("Operation", NBTType.INT, snap.getOperation().getModifier());
-        modifierCompound.addValue("UUIDLeast", NBTType.LONG, randomUUID.getLeastSignificantBits());
-        modifierCompound.addValue("UUIDMost", NBTType.LONG, randomUUID.getMostSignificantBits());
-        modifierCompound.addValue("Slot", NBTType.STRING, snap.getSlot().name().toLowerCase());
+        modifierCompound.setValue("AttributeName", NBTType.STRING, snap.getType().getName());
+        modifierCompound.setValue("Name", NBTType.STRING, snap.getType().getName());
+        modifierCompound.setValue("Amount", NBTType.DOUBLE, snap.getAmount());
+        modifierCompound.setValue("Operation", NBTType.INT, snap.getOperation().getModifier());
+        modifierCompound.setValue("UUIDLeast", NBTType.LONG, randomUUID.getLeastSignificantBits());
+        modifierCompound.setValue("UUIDMost", NBTType.LONG, randomUUID.getMostSignificantBits());
+        modifierCompound.setValue("Slot", NBTType.STRING, snap.getSlot().name().toLowerCase());
         attributeList.addTag(modifierCompound);
     }
     
     public void addModifier(final AttributeSlot slot, final ItemAttribute attribute, final Operation op, final double value)
     {
         NBTCompound modifierCompound=new NBTCompound();
-        modifierCompound.addValue("AttributeName", NBTType.STRING, attribute.getName());
-        modifierCompound.addValue("Name", NBTType.STRING, attribute.getName());
-        modifierCompound.addValue("Amount", NBTType.DOUBLE, value);
-        modifierCompound.addValue("Operation", NBTType.INT, op.getModifier());
-        modifierCompound.addValue("UUIDLeast", NBTType.LONG, randomUUID.getLeastSignificantBits());
-        modifierCompound.addValue("UUIDMost", NBTType.LONG, randomUUID.getMostSignificantBits());
-        modifierCompound.addValue("Slot", NBTType.STRING, slot.name().toLowerCase());
+        modifierCompound.setValue("AttributeName", NBTType.STRING, attribute.getName());
+        modifierCompound.setValue("Name", NBTType.STRING, attribute.getName());
+        modifierCompound.setValue("Amount", NBTType.DOUBLE, value);
+        modifierCompound.setValue("Operation", NBTType.INT, op.getModifier());
+        modifierCompound.setValue("UUIDLeast", NBTType.LONG, randomUUID.getLeastSignificantBits());
+        modifierCompound.setValue("UUIDMost", NBTType.LONG, randomUUID.getMostSignificantBits());
+        modifierCompound.setValue("Slot", NBTType.STRING, slot.name().toLowerCase());
         attributeList.addTag(modifierCompound);
     }
 
     public void apply(final NBTCompound compound)
     {
-        compound.addTag("AttributeModifiers", attributeList);
+        compound.setTag("AttributeModifiers", attributeList);
     }
     
     public class ModifierSnapshot

@@ -5,14 +5,9 @@
  */
 package me.parozzz.hopeitems.utilities;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import static me.parozzz.hopeitems.utilities.Utils.bukkitVersion;
 import me.parozzz.hopeitems.utilities.reflection.nbt.item.ItemNBT;
 import org.bukkit.Color;
 import org.bukkit.Material;
@@ -33,19 +28,6 @@ import org.bukkit.potion.PotionEffect;
  */
 public class ItemBuilder 
 {
-    private static Consumer<ItemMeta> setUnbreakable;
-    static
-    {
-        setUnbreakable= meta -> {};
-        if(Utils.bukkitVersion("1.9","1.10"))
-        {
-            setUnbreakable= meta -> meta.spigot().setUnbreakable(true);
-        }
-        else if(Utils.bukkitVersion("1.11","1.12"))
-        {
-            setUnbreakable= meta -> meta.setUnbreakable(true);
-        }
-    }
     private final ItemMeta meta;
     private final ItemStack item;
     public ItemBuilder(final Material type)
@@ -104,7 +86,7 @@ public class ItemBuilder
     
     public ItemBuilder unbreakable()
     {
-        setUnbreakable.accept(meta);
+        Utils.setUnbreakable(meta, true);
         return this;
     }
     
@@ -179,37 +161,37 @@ public class ItemBuilder
     public class EggBuilder
     {
         private ItemMeta meta;
-        private final ItemStack head;
-        public EggBuilder(final ItemStack head, final EntityType et)
+        private final ItemStack egg;
+        public EggBuilder(final ItemStack egg, final EntityType et)
         {
-            if(head.getType()!=Material.MONSTER_EGG)
+            if(egg.getType()!=Material.MONSTER_EGG)
             {
                 throw new IllegalArgumentException("The item in the builder is not a monster egg");
             }
             
-            meta=head.getItemMeta();
+            meta=egg.getItemMeta();
             
-            if(bukkitVersion("1.8")) 
+            if(MCVersion.V1_8.isEqual()) 
             {
                 ItemStack item=new SpawnEgg(et).toItemStack(1);
                 item.setItemMeta(meta);
-                this.head=item;
+                this.egg=item;
             }
-            else if(bukkitVersion("1.9","1.10")) 
+            else if(MCVersion.contains(MCVersion.V1_10, MCVersion.V1_9)) 
             { 
-                this.head=head;
-                meta=ItemNBT.setSpawnedType(head, et).getItemMeta();
+                this.egg=ItemNBT.setSpawnedType(egg, et);
+                meta=egg.getItemMeta();
             }
             else 
             {
-                this.head=head;
+                this.egg=egg;
                 ((SpawnEggMeta)meta).setSpawnedType(et);   
             }
         }
         
         public ItemStack build()
         {
-            head.setItemMeta(meta);
+            egg.setItemMeta(meta);
             return item;
         }
     }

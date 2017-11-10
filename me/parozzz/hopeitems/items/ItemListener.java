@@ -15,6 +15,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import me.parozzz.hopeitems.Configs;
 import me.parozzz.hopeitems.items.ItemInfo.When;
+import me.parozzz.hopeitems.utilities.MCVersion;
 import me.parozzz.hopeitems.utilities.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -46,6 +47,7 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.inventory.Inventory;
@@ -67,11 +69,11 @@ public class ItemListener implements Listener
     private final Function<Player, ItemStack> itemEntityInteract;
     public ItemListener()
     {
-        arrowPriority = Utils.bukkitVersion("1.8") ?
+        arrowPriority = MCVersion.V1_8.isEqual() ?
                 p -> Stream.of(p.getInventory().getContents()) :
                 p -> Stream.concat(Stream.of(p.getInventory().getItemInOffHand()), Stream.of(p.getInventory().getContents()));
         
-        itemEntityInteract = Utils.bukkitVersion("1.8") ?
+        itemEntityInteract = MCVersion.V1_8.isEqual() ?
                 p -> p.getItemInHand() :
                 p ->
                 {
@@ -259,7 +261,7 @@ public class ItemListener implements Listener
     
     private void decreaseArrow(final ItemInfo info, final ItemStack item, final Inventory i)
     {
-        if(info.hasWhen(When.ARROW) && !Utils.bukkitVersion("1.8"))
+        if(info.hasWhen(When.ARROW) && MCVersion.V1_9.isHigher())
         {
             Utils.decreaseItemStack(item, i);
             return;
@@ -293,7 +295,7 @@ public class ItemListener implements Listener
     {
         getOptional(e.getItemDrop().getItemStack(), When.DROP, When.DROPONGROUND).ifPresent(info -> 
         {
-            if(info.checkConditions(e.getPlayer().getLocation(), e.getPlayer()) && !info.hasCooldown(e.getPlayer().getUniqueId()))
+            if(info.checkConditions(e.getPlayer().getLocation(), e.getPlayer()) && !info.hasCooldown(e.getPlayer()))
             {
                 if(info.hasWhen(When.DROP))
                 {
@@ -365,7 +367,7 @@ public class ItemListener implements Listener
                     {
                         getOptional(hand, When.ATTACKSELF, When.ATTACKOTHER).ifPresent(info -> 
                         {
-                            if(info.checkConditions(p.getLocation(), p) && !info.hasCooldown(p.getUniqueId()))
+                            if(info.checkConditions(p.getLocation(), p) && !info.hasCooldown(p))
                             {
                                 if(info.hasWhen(When.ATTACKSELF))
                                 {
@@ -456,7 +458,7 @@ public class ItemListener implements Listener
                 PotionMeta meta=(PotionMeta)item.getItemMeta();
                 
                 meta.getCustomEffects().forEach(pe -> ((TippedArrow)arrow).addCustomEffect(pe, true));
-                if(Utils.bukkitVersion("1.11","1.12") && meta.hasColor()) 
+                if(MCVersion.V1_11.isHigher() && meta.hasColor()) 
                 { 
                     ((TippedArrow)arrow).setColor(meta.getColor()); 
                 }

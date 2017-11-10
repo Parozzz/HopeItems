@@ -10,7 +10,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -22,12 +21,9 @@ import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import me.parozzz.hopeitems.utilities.classes.ComplexMapList;
-import me.parozzz.hopeitems.utilities.classes.MapArray;
 import me.parozzz.hopeitems.utilities.classes.SimpleMapList;
 import me.parozzz.hopeitems.utilities.reflection.API;
 import me.parozzz.hopeitems.utilities.reflection.HeadUtils;
@@ -47,7 +43,6 @@ import org.bukkit.FireworkEffect;
 import org.bukkit.FireworkEffect.Builder;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
@@ -152,7 +147,7 @@ public final class Utils {
         
         private static Function<LivingEntity, CreatureType> init()
         {
-            if(Utils.bukkitVersion("1.11", "1.12"))
+            if(MCVersion.V1_11.isHigher())
             {
                 return ent -> CreatureType.valueOf(ent.getType().name());
             }
@@ -191,7 +186,7 @@ public final class Utils {
                         case ZOMBIE:
                             if(((Zombie)ent).isVillager()) 
                             {
-                                if(!Utils.bukkitVersion("1.8") && ((Zombie)ent).getVillagerProfession() == Villager.Profession.HUSK) 
+                                if(MCVersion.V1_9.isHigher() && ((Zombie)ent).getVillagerProfession() == Villager.Profession.HUSK) 
                                 { 
                                     return CreatureType.HUSK; 
                                 }
@@ -219,17 +214,24 @@ public final class Utils {
     
     public static enum ColorEnum
     {
-        AQUA(Color.AQUA),BLACK(Color.BLACK),FUCHSIA(Color.FUCHSIA),
-        GRAY(Color.GRAY),GREEN(Color.GREEN),LIME(Color.LIME),
-        MAROON(Color.MAROON),NAVY(Color.NAVY),OLIVE(Color.OLIVE),
-        ORANGE(Color.ORANGE),PURPLE(Color.PURPLE),RED(Color.RED),
-        BLUE(Color.BLUE),SILVER(Color.SILVER),TEAL(Color.TEAL),
-        WHITE(Color.WHITE),YELLOW(Color.YELLOW);
+        AQUA(Color.AQUA, ChatColor.AQUA),BLACK(Color.BLACK, ChatColor.BLACK),FUCHSIA(Color.FUCHSIA, ChatColor.LIGHT_PURPLE),
+        GRAY(Color.GRAY, ChatColor.GRAY),GREEN(Color.GREEN, ChatColor.GREEN),LIME(Color.LIME, ChatColor.GREEN),
+        MAROON(Color.MAROON, ChatColor.GRAY),NAVY(Color.NAVY, ChatColor.DARK_BLUE),OLIVE(Color.OLIVE, ChatColor.DARK_GREEN),
+        ORANGE(Color.ORANGE, ChatColor.GOLD),PURPLE(Color.PURPLE, ChatColor.DARK_PURPLE),RED(Color.RED, ChatColor.RED),
+        BLUE(Color.BLUE, ChatColor.BLUE),SILVER(Color.SILVER, ChatColor.DARK_GRAY),TEAL(Color.TEAL, ChatColor.GRAY),
+        WHITE(Color.WHITE, ChatColor.WHITE),YELLOW(Color.YELLOW, ChatColor.YELLOW);
         
         private final Color color;
-        private ColorEnum(Color color)
+        private final ChatColor chat;
+        private ColorEnum(Color color, final ChatColor chat)
         {
+            this.chat=chat;
             this.color=color;
+        }
+        
+        public ChatColor getChatColor()
+        {
+            return chat;
         }
         
         public Color getBukkitColor()
@@ -243,7 +245,7 @@ public final class Utils {
     public static EnumSet<BlockFace> cardinals=EnumSet.of(BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH);
     public static void registerFireworkDamageListener()
     {
-        if(Utils.bukkitVersion("1.11", "1.12"))
+        if(MCVersion.V1_11.isHigher())
         {
             Bukkit.getServer().getPluginManager().registerEvents(new Listener()
             {
@@ -258,7 +260,7 @@ public final class Utils {
     
     public static void registerArmorStandInvicibleListener()
     {
-        if(Utils.bukkitVersion("1.8"))
+        if(MCVersion.V1_8.isEqual())
         {
             Bukkit.getServer().getPluginManager().registerEvents(new Listener()
             {
@@ -339,7 +341,7 @@ public final class Utils {
                 Utils.setMainHand(equip, item);
                 if(dropChance!=null)
                 {
-                    if(Utils.bukkitVersion("1.8"))
+                    if(MCVersion.V1_8.isEqual())
                     {
                         equip.setItemInHandDropChance(dropChance);
                     }
@@ -363,7 +365,7 @@ public final class Utils {
     public static ItemStack getMainHand(final EntityEquipment equip)
     {
         return Optional.ofNullable(getHand)
-                .orElseGet(() -> getHand = Utils.bukkitVersion("1.8") ? eq -> eq.getItemInHand() : eq -> eq.getItemInMainHand())
+                .orElseGet(() -> getHand = MCVersion.V1_8.isEqual()? eq -> eq.getItemInHand() : eq -> eq.getItemInMainHand())
                 .apply(equip);
     }
     
@@ -371,7 +373,7 @@ public final class Utils {
     public static void setMainHand(final EntityEquipment equip, final ItemStack item)
     {
         Optional.ofNullable(setHand)
-                .orElseGet(() -> setHand = Utils.bukkitVersion("1.8")? (eq, i) -> eq.setItemInHand(i) : (eq, i) -> eq.setItemInMainHand(i))
+                .orElseGet(() -> setHand = MCVersion.V1_8.isEqual()? (eq, i) -> eq.setItemInHand(i) : (eq, i) -> eq.setItemInMainHand(i))
                 .accept(equip, item);
     }
     
@@ -379,7 +381,7 @@ public final class Utils {
     public static double getMaxHealth(final LivingEntity ent)
     {
         return Optional.ofNullable(getMaxHealth)
-                .orElseGet(() -> getMaxHealth = Utils.bukkitVersion("1.8")? e -> e.getMaxHealth() : e -> e.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue())
+                .orElseGet(() -> getMaxHealth = MCVersion.V1_8.isEqual()? e -> e.getMaxHealth() : e -> e.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue())
                 .apply(ent);
     }
     
@@ -387,7 +389,7 @@ public final class Utils {
     public static void setMaxHealth(final LivingEntity ent, final Double health)
     {
         Optional.ofNullable(setMaxHealth)
-                .orElseGet(() -> setMaxHealth = Utils.bukkitVersion("1.8")? (e,h) -> e.setMaxHealth(h) : (e,h) -> e.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(h))
+                .orElseGet(() -> setMaxHealth = MCVersion.V1_8.isEqual()? (e,h) -> e.setMaxHealth(h) : (e,h) -> e.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(h))
                 .accept(ent, health);
         ent.setHealth(health.intValue());
     }
@@ -397,11 +399,11 @@ public final class Utils {
     {
         return Optional.ofNullable(isUnbreakable).orElseGet(() -> 
         {
-            if(Utils.bukkitVersion("1.8"))
+            if(MCVersion.V1_8.isEqual())
             {
                 isUnbreakable = i -> false;
             }
-            else if(Utils.bukkitVersion("1.9", "1.10"))
+            else if(MCVersion.contains(MCVersion.V1_9, MCVersion.V1_10))
             {
                 isUnbreakable = i -> i.getItemMeta().spigot().isUnbreakable();
             }
@@ -418,11 +420,11 @@ public final class Utils {
     {
         Optional.ofNullable(setUnbreakable).orElseGet(() -> 
         {
-            if(Utils.bukkitVersion("1.8"))
+            if(MCVersion.V1_8.isEqual())
             {
                 setUnbreakable = (m,b) -> {};
             }
-            else if(Utils.bukkitVersion("1.9", "1.10"))
+            else if(MCVersion.contains(MCVersion.V1_9, MCVersion.V1_10))
             {
                 setUnbreakable = (m,b) -> m.spigot().setUnbreakable(b);
             }
@@ -496,7 +498,7 @@ public final class Utils {
         as.setMarker(true);
         as.setRemoveWhenFarAway(false);
         as.setBasePlate(false);
-        if(!Utils.bukkitVersion("1.8")) 
+        if(MCVersion.V1_9.isHigher()) 
         {
             as.setSilent(true);
             as.setInvulnerable(true); 
@@ -513,7 +515,7 @@ public final class Utils {
             item.setVelocity(new Vector(0,0,0));
             item.setCustomName(str);
             item.setCustomNameVisible(true);
-            if(!Utils.bukkitVersion("1.8")) 
+            if(MCVersion.V1_9.isEqual()) 
             { 
                 item.setGravity(false);
                 item.setSilent(true);
@@ -566,7 +568,7 @@ public final class Utils {
             case "POTION":
             case "LINGERING_POTION":
             case "TIPPED_ARROW":
-                if(bukkitVersion("1.8"))
+                if(MCVersion.V1_8.isEqual())
                 {
                     Potion potion=new Potion(Debug.validateEnum(path.getString("type", "WATER"), PotionType.class));
 
@@ -582,7 +584,7 @@ public final class Utils {
                 }
 
                 meta=item.getItemMeta();
-                if(path.contains("color") && bukkitVersion("1.11","1.12"))
+                if(path.contains("color") && MCVersion.V1_11.isHigher())
                 { 
                     ((PotionMeta)meta).setColor(Debug.validateEnum(path.getString("color"), ColorEnum.class).getBukkitColor()); 
                 }
@@ -602,7 +604,7 @@ public final class Utils {
             case "MONSTER_EGG":
                 EntityType et = Debug.validateEnum(path.getString("data" , "PIG"), EntityType.class);
 
-                if(bukkitVersion("1.8")) 
+                if(MCVersion.V1_8.isEqual()) 
                 {
                     item=new SpawnEgg(et).toItemStack(1); 
                     meta=item.getItemMeta();
@@ -610,7 +612,7 @@ public final class Utils {
                 }
 
                 item=new ItemStack(Material.MONSTER_EGG);
-                if(bukkitVersion("1.9","1.10")) 
+                if(MCVersion.V1_9.isEqual() || MCVersion.V1_10.isEqual()) 
                 { 
                     meta=ItemNBT.setSpawnedType(item, et).getItemMeta(); 
                 }
@@ -662,7 +664,7 @@ public final class Utils {
 
         new SimpleMapList(path.getMapList("tag")).getValues().forEach((key, value) -> 
         {
-            compound.addValue(key, NBTType.STRING, value);
+            compound.setValue(key, NBTType.STRING, value);
         });
         
         new SimpleMapList(path.getMapList("adventure")).getValues().forEach((key, value) -> 
@@ -690,27 +692,24 @@ public final class Utils {
         return nbt.setTag(compound).getBukkitItem();
     }
     
-    public static ItemStack parseItemVariable(final ItemStack item, final String s, final String replace)
+    public static void parseItemVariable(final ItemStack item, final String placeholder, final Object replace)
     {
-        ItemMeta meta=item.getItemMeta();
+        ItemMeta meta = item.getItemMeta();
+        parseMetaVariable(meta, placeholder, replace);
+        item.setItemMeta(meta);
+    }
+    
+    public static void parseMetaVariable(final ItemMeta meta, final String placeholder, final Object replace)
+    {
         if(meta.hasDisplayName())
         {
-            meta.setDisplayName(Utils.color(meta.getDisplayName().replace(s, replace)));
+            meta.setDisplayName(Utils.color(meta.getDisplayName().replace(placeholder, replace.toString())));
         }
        
         if(meta.hasLore())
         {
-            meta.setLore(Utils.colorList(meta.getLore().stream().map(lore -> lore.replace(s, replace)).collect(Collectors.toList())));
+            meta.setLore(Utils.colorList(meta.getLore().stream().map(lore -> lore.replace(placeholder, replace.toString())).collect(Collectors.toList())));
         }
-        
-        item.setItemMeta(meta);
-        return item;
-    }
-    
-    
-    public static boolean bukkitVersion(final String... version)
-    { 
-        return Arrays.stream(version).anyMatch(Bukkit.getVersion()::contains); 
     }
     
     public static class FireworkBuilder
@@ -766,34 +765,6 @@ public final class Utils {
                     fw.detonate();
                 }
             }.runTaskLater(plugin, detonateTicks);
-        }
-    }
-    
-    public static class SoundManager
-    {
-        private final Sound sound;
-        private final float volume;
-        private final float pitch;
-        public SoundManager(final String sound, final float volume, final float pitch)
-        {
-            this(Debug.validateEnum(sound, Sound.class), volume, pitch);
-        }
-        
-        public SoundManager(final Sound sound, final float volume, final float pitch)
-        {
-            this.sound=sound;
-            this.volume=volume;
-            this.pitch=pitch;
-        }
-        
-        public void play(final Location l, final Player p)
-        {
-            p.playSound(l, sound, volume, pitch);
-        }
-        
-        public void play(final Location l)
-        {
-            l.getWorld().playSound(l, sound, volume, pitch);
         }
     }
 }

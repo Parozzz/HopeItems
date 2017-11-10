@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,6 +18,7 @@ import me.parozzz.hopeitems.items.managers.explosive.ExplosiveManager;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyManager;
 import me.parozzz.hopeitems.items.managers.mobs.MobManager;
 import me.parozzz.hopeitems.shop.Shop;
+import me.parozzz.hopeitems.utilities.MCVersion;
 import me.parozzz.hopeitems.utilities.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.Recipe;
@@ -50,17 +50,17 @@ public class HopeItems extends JavaPlugin
                 Shop.registerListener();
             }
             
-            if(Utils.bukkitVersion("1.8")) 
+            if(MCVersion.V1_8.isEqual()) 
             {
                 Utils.registerArmorStandInvicibleListener();
             }
-            else if(Utils.bukkitVersion("1.11", "1.12"))
+            else if(MCVersion.V1_11.isHigher())
             {
                 Utils.registerFireworkDamageListener();
             }
             
             Bukkit.getPluginManager().registerEvents(new ItemListener(), this);
-            if(!Utils.bukkitVersion("1.8"))
+            if(MCVersion.V1_9.isHigher())
             {
                 ItemListener.register1_9Listener();
             }

@@ -35,7 +35,7 @@ public class HItem
     
     public String getStringId()
     {
-        return tag.getKey(ItemUtils.CUSTOM_NBT, NBTType.STRING, String.class);
+        return tag.getKey(ItemUtils.CUSTOM_NBT, String.class);
     }
     
     public ItemStack getItem()

@@ -15,7 +15,7 @@ import me.parozzz.hopeitems.utilities.reflection.NBTTagManager.NBTType;
  *
  * @author Paros
  */
-public class NBTCompound implements Tags
+public class NBTCompound implements Tags, Cloneable
 {
     private final Object nbtCompound;
     public NBTCompound()
@@ -28,31 +28,32 @@ public class NBTCompound implements Tags
         this.nbtCompound=compound; 
     }
 
-    public void addValue(final String key, final NBTType type, final Object value)
+    public <T> T getKey(final String key, final Class<T> clazz)
     {
-        Debug.validateMethod(API.getNBT().getCompoundSetter(type), nbtCompound, key, value);
+        return (T) Debug.validateMethod(API.getNBT().getCompoundGetter(NBTType.getByPrimitive(clazz)), nbtCompound, key);
     }
-
-    public <T> T getKey(final String key, final NBTType type, final Class<T> clazz)
+    
+    public NBTCompound getCompound(final String key)
     {
-        
-        if(clazz==NBTCompound.class)
-        {
-            return (T) new NBTCompound(Debug.validateMethod(API.getNBT().getCompoundGetter(type), nbtCompound, key));
-        }
-        else if(clazz!=type.getPrimitiveClass())
-        {
-            return null;
-        }
-        return (T) Debug.validateMethod(API.getNBT().getCompoundGetter(type), nbtCompound, key);
+        return new NBTCompound(Debug.validateMethod(API.getNBT().getCompoundGetter(NBTType.COMPOUND), nbtCompound, key));
     }
     
     public NBTList getList(final String key, final NBTType type)
     {
         return new NBTList(Debug.validateMethod(API.getNBT().getCompoundGetter(NBTType.LIST), nbtCompound, key, (int)type.getId()));
     }
+    
+    public void removeKey(final String key)
+    {
+        Debug.validateMethod(API.getNBT().compoundRemoveKey, nbtCompound, key);
+    }
 
-    public void addTag(final String key, final Tags nbt)
+    public void setValue(final String key, final NBTType type, final Object value)
+    { 
+        Debug.validateMethod(API.getNBT().getCompoundSetter(type), nbtCompound, key, value);
+    }
+    
+    public void setTag(final String key, final Tags nbt)
     {
         Debug.validateMethod(API.getNBT().compoundSetNBT, nbtCompound, key, nbt.getNBTObject());
     }
@@ -76,7 +77,7 @@ public class NBTCompound implements Tags
     {
         return (Set<String>)Debug.validateMethod(API.getNBT().compoundKeySet, nbtCompound);
     }
-
+    
     @Override
     public Object getNBTObject() 
     {

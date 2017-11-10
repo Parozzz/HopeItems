@@ -12,8 +12,8 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import me.parozzz.hopeitems.utilities.reflection.API.ReflectionUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+
 /**
  *
  * @author Paros
@@ -21,7 +21,6 @@ import org.bukkit.entity.Player;
 public final class PacketManager 
 {
     private final Method handle;
-    private final Method getWorld;
     private final Field playerConnection;
     protected PacketManager()
     {
@@ -30,18 +29,11 @@ public final class PacketManager
 
         Class<?> EntityPlayer=ReflectionUtils.getNMSClass("EntityPlayer");
         playerConnection=ReflectionUtils.getField(EntityPlayer, "playerConnection");
-        getWorld=ReflectionUtils.getMethod(EntityPlayer, "getWorld", new Class[0]);
     }
     
     public Object getHandle(final Player p) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException
     {
         return handle.invoke(p);
-    }
-    
-    private Object getWorld(final Object handle) 
-            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException
-    {
-        return getWorld.invoke(handle);
     }
     
     private Object playerConnection(final Object handle) throws IllegalArgumentException, IllegalAccessException

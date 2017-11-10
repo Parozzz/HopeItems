@@ -11,6 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import me.parozzz.hopeitems.utilities.MCVersion;
 import me.parozzz.hopeitems.utilities.reflection.API.ReflectionUtils;
 import org.bukkit.entity.Player;
 
@@ -23,7 +24,7 @@ public final class ActionBar
         nmsChatMessageType = (byte)2;
         
         Class<?> ChatMessageType=byte.class;
-        if(Utils.bukkitVersion("1.12"))
+        if(MCVersion.V1_12.isHigher())
         {
             ChatMessageType=ReflectionUtils.getNMSClass("ChatMessageType");
             nmsChatMessageType=Arrays.stream(ChatMessageType.getEnumConstants()).filter(o -> o.toString().equals("GAME_INFO")).findFirst().orElseThrow(() -> new NullPointerException("ActionBar init problem"));

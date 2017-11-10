@@ -41,7 +41,13 @@ explodingDiamond:
     - blockStep
     - blockDestroy
   removeOnUse: true
-  cooldown: 60
+  Cooldown:
+    default: 60 #Default time without any perms
+    message: "&cYou are on cooldown. &fWait &l&f{time} &fsecs" #Message on cooldown. Set to "" to disable
+    permissions: 
+      - explodingdiamond.vip.cooldown: 30 #permission: timeToWait
+      - explodingdiamond.vip+.cooldown: 10
+      - explodingdiamond.vip++.cooldown: 0
   Explosive:
     type: creeper #or TNT/Fireball
     option:
@@ -177,7 +183,7 @@ explodingDiamond:
     player:
       - permission: value:hopeitems.explodingdiamond.use,message:&cNo permission to use it
       - gamemode: value:creative,message:&cYou need to use creative mode
-      - sneaking: value:true,message:&cSneak_next_time!
+      - sneaking: value:true,message:&cSneak next time!
       - food: value:1~10,message:&cFood level is not right
       # - food: value:10,message:&cFood_level_is_not_right
       # - food: value:>10,message:&cFood_level_is_too_high

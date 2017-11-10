@@ -5,6 +5,8 @@
  */
 package me.parozzz.hopeitems.utilities.placeholders;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.bukkit.Location;
@@ -113,51 +115,4 @@ public class Placeholder
         return toSend.toString();
     }
     
-    private class MutableString implements Cloneable
-    {
-        private String string;
-        public MutableString(final String string)
-        {
-            this.string=string;
-        }
-        
-        public void set(final String newString)
-        {
-            string=newString;
-        }
-        
-        public void replace(final String holder, final String replace)
-        {
-            string = string.replace(holder, replace);
-        }
-        
-        public void replace(final String holder, final Object replace)
-        {
-            string = string.replace(holder, replace.toString());
-        }
-        
-        public boolean contains(final String contain)
-        {
-            return string.contains(contain);
-        }
-        
-        @Override
-        public String toString()
-        {
-            return string;
-        }
-        
-        @Override
-        public MutableString clone()
-        {
-            try
-            {
-                return (MutableString)super.clone();
-            }
-            catch(final CloneNotSupportedException e)
-            {
-                return null;
-            }
-        }
-    }
 }

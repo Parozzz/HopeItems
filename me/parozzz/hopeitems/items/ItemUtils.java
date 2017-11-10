@@ -25,7 +25,7 @@ public class ItemUtils
         ItemNBT nbt=new ItemNBT(item);
 
         NBTCompound compound=nbt.getTag();
-        compound.addValue(CUSTOM_NBT, NBTType.STRING, name);
+        compound.setValue(CUSTOM_NBT, NBTType.STRING, name);
 
         return nbt.setTag(compound).getBukkitItem();
     }

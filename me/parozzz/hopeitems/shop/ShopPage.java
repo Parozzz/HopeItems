@@ -64,7 +64,7 @@ public class ShopPage
             ItemNBT nbt=new ItemNBT(item);
             NBTCompound tag=nbt.getTag();
             
-            tag.addValue(FUNCTION_NBT, NBTType.STRING, f.name());
+            tag.setValue(FUNCTION_NBT, NBTType.STRING, f.name());
             
             switch(f)
             {
@@ -72,11 +72,11 @@ public class ShopPage
                     break;
                 case BUY:
                 case SELL:
-                    tag.addValue(COST_NBT, NBTType.DOUBLE, sPath.getDouble("money"));
-                    tag.addValue(CUSTOMITEM_NBT, NBTType.STRING, sPath.getString("item"));
+                    tag.setValue(COST_NBT, NBTType.DOUBLE, sPath.getDouble("money"));
+                    tag.setValue(CUSTOMITEM_NBT, NBTType.STRING, sPath.getString("item"));
                     break;
                 case SHOP:
-                    tag.addValue(SHOP_NBT, NBTType.STRING, sPath.getString("shop"));
+                    tag.setValue(SHOP_NBT, NBTType.STRING, sPath.getString("shop"));
                     break;
             }
             
@@ -110,17 +110,17 @@ public class ShopPage
         ItemNBT nbt=new ItemNBT(e.getCurrentItem());
         NBTCompound tag=nbt.getTag();
 
-        ShopFunction f=ShopFunction.valueOf(tag.getKey(FUNCTION_NBT, NBTType.STRING, String.class));
+        ShopFunction f=ShopFunction.valueOf(tag.getKey(FUNCTION_NBT, String.class));
         switch(f)
         {
             case SHOP:
-                Optional.ofNullable(Shop.getInstance().getPageByName(tag.getKey(SHOP_NBT, NBTType.STRING, String.class)))
+                Optional.ofNullable(Shop.getInstance().getPageByName(tag.getKey(SHOP_NBT, String.class)))
                         .ifPresent(page -> e.getWhoClicked().openInventory(page.getInventory()));
                 break;
             case SELL:
-                Optional.ofNullable(Configs.getItemInfo(tag.getKey(CUSTOMITEM_NBT, NBTType.STRING, String.class))).ifPresent(info -> 
+                Optional.ofNullable(Configs.getItemInfo(tag.getKey(CUSTOMITEM_NBT, String.class))).ifPresent(info -> 
                 {
-                    double cost=tag.getKey(COST_NBT, NBTType.DOUBLE, double.class);
+                    double cost=tag.getKey(COST_NBT, double.class);
                     
                     double toGive = Stream.of(e.getWhoClicked().getInventory().getContents()).filter(Objects::nonNull)
                             .map(HItem::new)
@@ -135,10 +135,10 @@ public class ShopPage
                 });
                 break;
             case BUY:
-                ItemInfo info=Configs.getItemInfo(tag.getKey(CUSTOMITEM_NBT, NBTType.STRING, String.class));
+                ItemInfo info=Configs.getItemInfo(tag.getKey(CUSTOMITEM_NBT, String.class));
                 if(info!=null)
                 {
-                    double cost=tag.getKey(COST_NBT, NBTType.DOUBLE, double.class);
+                    double cost=tag.getKey(COST_NBT, double.class);
                     if(Dependency.eco.withdrawPlayer((Player)e.getWhoClicked(), cost).transactionSuccess())
                     {
                         e.getWhoClicked().getInventory().addItem(info.getItem().parse((Player)e.getWhoClicked(), e.getWhoClicked().getLocation()));

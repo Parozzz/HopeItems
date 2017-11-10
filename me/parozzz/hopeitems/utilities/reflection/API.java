@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
+import me.parozzz.hopeitems.utilities.MCVersion;
 import org.bukkit.Bukkit;
 
 /**
@@ -52,29 +53,22 @@ public class API
         return Optional.ofNullable(nbt).orElseGet(() -> nbt=new NBTTagManager());
     }
     
-    
-    private static String version;
-    public static String getVersion()
+    private static BookGUI book;
+    public static BookGUI getBook()
     {
-        return Optional.ofNullable(version).orElseGet(() -> 
-        {
-            String name = Bukkit.getServer().getClass().getPackage().getName();
-            return version = name.substring(name.lastIndexOf('.') + 1) + ".";
-        });
+        return Optional.ofNullable(book).orElseGet(() -> book = new BookGUI());
     }
-    
-    
     
     public static class ReflectionUtils
     {
         private static final Method serialize;
         private static final Class<?> nmsChatSerializer;
-    
+        
         static
         {
-            if (getVersion().contains("1_8")) 
+            if (MCVersion.nms().contains("1_8")) 
             {
-                if (getVersion().contains("R1")) 
+                if (MCVersion.nms().contains("R1")) 
                 {
                     nmsChatSerializer = getNMSClass("ChatSerializer");
                 } 
@@ -100,7 +94,7 @@ public class API
         {
             try 
             {
-                return Class.forName(new StringBuilder("net.minecraft.server.").append(getVersion()).append(className).toString());
+                return Class.forName(new StringBuilder("net.minecraft.server.").append(MCVersion.nms()).append(className).toString());
             } 
             catch (ClassNotFoundException ex) 
             {
@@ -113,7 +107,7 @@ public class API
         {
             try 
             { 
-                return Class.forName(new StringBuilder("org.bukkit.craftbukkit.").append(getVersion()).append(path).toString());
+                return Class.forName(new StringBuilder("org.bukkit.craftbukkit.").append(MCVersion.nms()).append(path).toString());
             } 
             catch (ClassNotFoundException ex) 
             {
@@ -123,21 +117,17 @@ public class API
         }
 
 
-        public static Field getField(Class<?> clazz, String name)
+        public static Field getField(final Class<?> clazz, final String name)
         {
             try 
             {
-                return Optional.ofNullable(clazz.getDeclaredField(name)).map(field -> 
-                {
-                    field.setAccessible(true);
-                    return field;
-                })
-                .orElseThrow(() -> new NullPointerException("Field "+name+" does not exist in class "+clazz.getName()));
+                Field f = clazz.getDeclaredField(name);
+                f.setAccessible(true);
+                return f;
             } 
             catch (NoSuchFieldException | SecurityException ex) 
             {
-                Logger.getLogger(API.class.getName()).log(Level.SEVERE, null, ex);
-                return null;
+                throw new NullPointerException("Field "+name+" does not exist in class "+clazz.getName());
             }
         }
 

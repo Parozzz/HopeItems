@@ -7,18 +7,16 @@ package me.parozzz.hopeitems.items;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
-import java.util.function.Predicate;
 import me.parozzz.hopeitems.items.managers.conditions.ConditionManager;
 import me.parozzz.hopeitems.items.managers.conditions.ConditionType;
 import me.parozzz.hopeitems.items.managers.actions.ActionManager;
 import me.parozzz.hopeitems.items.managers.actions.ActionType;
 import me.parozzz.hopeitems.items.managers.actions.DoubleActionManager;
 import me.parozzz.hopeitems.items.managers.actions.SingleActionManager;
+import me.parozzz.hopeitems.items.managers.cooldown.CooldownManager;
 import me.parozzz.hopeitems.items.managers.explosive.ExplosiveManager;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyManager;
 import me.parozzz.hopeitems.items.managers.mobs.MobManager;
@@ -65,30 +63,15 @@ public class ItemInfo
         return name;
     }
     
-    private Predicate<UUID> hasCooldown= u -> false;
-    public void setCooldown(final long cooldown)
+    private CooldownManager cooldown;
+    public void setCooldown(final CooldownManager cooldown)
     {
-        Map<UUID, Long> cooldowns=new HashMap<>();
-        hasCooldown = u -> 
-                Optional.ofNullable(cooldowns.get(u)).map(l -> 
-                {
-                    if(System.currentTimeMillis()-l>cooldown)
-                    {
-                        cooldowns.replace(u, l, System.currentTimeMillis());
-                        return false;
-                    }
-
-                    return true;
-                }).orElseGet(() -> 
-                {
-                    cooldowns.put(u, System.currentTimeMillis());
-                    return false;
-                });
+        this.cooldown = cooldown;
     }
     
-    public boolean hasCooldown(final UUID u)
+    public boolean hasCooldown(final Player p)
     {
-        return hasCooldown.test(u);
+        return Optional.ofNullable(cooldown).map(cool -> cool.hasCooldown(p)).orElse(false);
     }
     
     public ItemPlaceholder getItem()
@@ -176,7 +159,7 @@ public class ItemInfo
     
     public void executeAll(final Location l, final Player p, final ItemStack item)
     {
-        if(checkConditions(l, p) && !hasCooldown(p.getUniqueId()))
+        if(checkConditions(l, p) && !hasCooldown(p))
         {
             executeActionsAndSpawn(l, p);
             executeLucky(p);

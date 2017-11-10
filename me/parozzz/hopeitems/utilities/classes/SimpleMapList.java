@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  *
  * @author Paros
  */
-public class SimpleMapList 
+public class SimpleMapList
 {
     private final Map<String, String> values;
     public SimpleMapList(final List<Map<?, ?>> list)
@@ -31,6 +31,11 @@ public class SimpleMapList
     public <T> T getValue(final String key, final Function<String, T> convert)
     {
         return Optional.ofNullable(values.get(key.toLowerCase())).map(convert).orElse(null);
+    }
+    
+    public <A,B> Map<A, B> getConvertedValues(final Function<String, A> convertKey, final Function<String, B> convertValue)
+    {
+        return values.entrySet().stream().collect(Collectors.toMap(e -> convertKey.apply(e.getKey()), e -> convertValue.apply(e.getValue())));
     }
     
     public Map<String, String> getValues()
