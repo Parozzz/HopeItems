@@ -46,6 +46,7 @@ public class ItemsCommand implements CommandExecutor
     {
         GETITEM("hopeitems.command.getitem", Player.class::isInstance),
         GIVEITEM("hopeitems.command.giveitem", cs -> true),
+        EXECUTE("hopeitems.command.execute", cs -> true),
         LIST("hopeitems.command.list", cs -> true),
         SHOP("hopeitems.command.shop", cs -> cs instanceof Player && Dependency.isEconomyHooked()),
         SHOPLIST("hopeitems.command.shoplist", cs -> cs instanceof Player && Dependency.isEconomyHooked()),
@@ -173,6 +174,29 @@ public class ItemsCommand implements CommandExecutor
                         cs.sendMessage(CommandMessageEnum.PLAYER_OFFLINE.toString());
                         return null;
                     });
+                case EXECUTE:
+                    if(val.length < 3)
+                    {
+                        cs.sendMessage(ce.getHelp());
+                        return true;
+                    }
+                    
+                    Optional.ofNullable(Bukkit.getPlayer(val[1])).map(p -> 
+                    {
+                        Optional.ofNullable(Configs.getItemInfo(val[2]))
+                                .map(info -> info.execute(p.getLocation(), p, val.length == 4 ? val[3].equalsIgnoreCase("-c") : false))
+                                .orElseGet(() -> 
+                                {
+                                    cs.sendMessage(CommandMessageEnum.WRONG_ITEM.toString());
+                                    return null;
+                                });
+                        return p;
+                    }).orElseGet(() -> 
+                    {
+                        cs.sendMessage(CommandMessageEnum.PLAYER_OFFLINE.toString());
+                        return null; 
+                    });
+                    break;
             }
         }
         return true;

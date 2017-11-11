@@ -94,15 +94,23 @@ public class GUIAnimation implements Animation
             return this;
         }
         
+        private boolean isEnded = false;
         @Override
         public void end()
         {
+            isEnded = true;
             for(int j=run;j<roll;j++) 
             {
                 change(); 
             }
             reward();
             this.cancel();
+        }
+        
+        @Override
+        public boolean isEnded()
+        {
+            return isEnded;
         }
         
         private int run=0;     
@@ -141,6 +149,7 @@ public class GUIAnimation implements Animation
         
         private void reward()
         {
+            isEnded = true;
             LuckyReward reward=map.get(winSlot);
             reward.getItems().forEach(info -> 
             {
@@ -150,7 +159,6 @@ public class GUIAnimation implements Animation
                 info.executeActions(l, p);
                 info.spawnMobs(l);
             });
-            p.removeMetadata(LuckyManager.LUCKY_METADATA, JavaPlugin.getProvidingPlugin(GUIAnimation.class));
         }
         
         private void change()

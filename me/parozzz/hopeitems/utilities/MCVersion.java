@@ -31,12 +31,12 @@ public enum MCVersion
     
     public boolean isHigher()
     {
-        return actual().id <= id;
+        return actual().id >= id;
     }
     
     public boolean isLower()
     {
-        return actual().id >= id;
+        return actual().id <= id;
     }
     
     public boolean isEqual()

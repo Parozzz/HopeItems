@@ -160,15 +160,15 @@ public class ItemInfo
     
     public void executeWithItem(final Location l, final Player p, final ItemStack item)
     {
-        if(execute(l, p) && removeOnUse)
+        if(execute(l, p, true) && removeOnUse)
         {
             Utils.decreaseItemStack(item, p.getInventory());
         }
     }
     
-    public boolean execute(final Location l, final Player p)
+    public boolean execute(final Location l, final Player p, final boolean conditions)
     {
-        if(checkConditions(l, p) && !hasCooldown(p))
+        if(!conditions || (checkConditions(l, p) && !hasCooldown(p)))
         {
             spawnMobs(l);
             executeActions(l, p);

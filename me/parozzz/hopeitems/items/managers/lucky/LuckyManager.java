@@ -91,7 +91,12 @@ public class LuckyManager
             {
                 if(e.getPlayer().hasMetadata(LUCKY_METADATA))
                 {
-                    ((AnimationRunnable)e.getPlayer().getMetadata(LUCKY_METADATA).get(0).value()).end();
+                    AnimationRunnable an = (AnimationRunnable)e.getPlayer().getMetadata(LUCKY_METADATA).get(0).value();
+                    if(!an.isEnded())
+                    {
+                        an.end();
+                        e.getPlayer().removeMetadata(LUCKY_METADATA, JavaPlugin.getProvidingPlugin(LuckyManager.class));
+                    }
                 }
             }
         };

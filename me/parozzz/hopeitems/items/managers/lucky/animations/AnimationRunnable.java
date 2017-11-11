@@ -12,4 +12,5 @@ package me.parozzz.hopeitems.items.managers.lucky.animations;
 public interface AnimationRunnable
 {
     void end();
+    boolean isEnded();
 }

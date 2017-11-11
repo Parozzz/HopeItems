@@ -17,6 +17,7 @@ import me.parozzz.hopeitems.items.ItemInfo.When;
 import me.parozzz.hopeitems.utilities.MCVersion;
 import me.parozzz.hopeitems.utilities.Utils;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -100,7 +101,7 @@ public class ItemListener implements Listener
                         BlockManager.getInstance().removeBlock(e.getClickedBlock());
                     }
                     
-                    info.execute(e.getClickedBlock().getLocation().add(0.5, 1, 0.5), e.getPlayer());
+                    info.execute(e.getClickedBlock().getLocation().add(0.5, 1, 0.5), e.getPlayer(), true);
                 });
         
         Optional.ofNullable(e.getItem()).ifPresent(item -> 
@@ -126,7 +127,11 @@ public class ItemListener implements Listener
                 else if(Utils.or(e.getAction(), Action.RIGHT_CLICK_AIR, Action.RIGHT_CLICK_BLOCK) && item.getType().name().contains("POTION") && 
                         (info.hasWhen(When.SPLASH) || info.hasWhen(When.LINGERING)))
                 {
-                    if(!info.removeOnUse)
+                    if(!info.checkConditions(e.getPlayer().getLocation(), e.getPlayer()) || info.hasCooldown(e.getPlayer()))
+                    {
+                        e.setCancelled(true);
+                    }
+                    else if(!info.removeOnUse)
                     {
                         e.setCancelled(true);
                         e.getPlayer().launchProjectile(ThrownPotion.class).setItem(item);
@@ -158,7 +163,7 @@ public class ItemListener implements Listener
     {
         getOptional(e.getEntity().getItem(), When.CONSUME).ifPresent(info -> 
         {
-            e.getAffectedEntities().stream().filter(Player.class::isInstance).map(Player.class::cast).forEach(p -> info.execute(p.getLocation(), p));
+            e.getAffectedEntities().stream().filter(Player.class::isInstance).map(Player.class::cast).forEach(p -> info.execute(p.getLocation(), p, false));
             info.spawnMobs(e.getEntity().getLocation());
         });
     }
@@ -183,7 +188,7 @@ public class ItemListener implements Listener
             e.setCancelled(true);
             if(info.hasWhen(When.DISPENSE))
             {      
-                info.execute(e.getBlock().getRelative(((DirectionalContainer)e.getBlock().getState().getData()).getFacing()).getLocation().add(0.5,0.5,0.5), null);
+                info.execute(e.getBlock().getRelative(((DirectionalContainer)e.getBlock().getState().getData()).getFacing()).getLocation().add(0.5,0.5,0.5), null, true);
             }
             else if(used.getType().name().contains("ARROW") && info.hasWhen(When.ARROW))
             {
@@ -206,65 +211,73 @@ public class ItemListener implements Listener
                 }
                 else
                 {
-                    this.decreaseArrow(info, used, ((Dispenser)e.getBlock().getState()).getInventory());
+                    if(info.hasWhen(When.ARROW) && MCVersion.V1_9.isHigher())
+                    {
+                        Utils.decreaseItemStack(used, ((Dispenser)e.getBlock().getState()).getInventory());
+                        return;
+                    }
+
+                    if(info.removeOnUse)
+                    {
+                        Utils.decreaseItemStack(used, ((Dispenser)e.getBlock().getState()).getInventory());
+                    }
                 }
             }
         });
     }
     
-    private final Set<UUID> shooters=new HashSet<>();
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
     private void onArrowLaunch(final ProjectileLaunchEvent e)
     {
         if(e.getEntity() instanceof Arrow && e.getEntity().getShooter() instanceof Player)
         {
             Player p = (Player)e.getEntity().getShooter();
-            if(shooters.remove(p.getUniqueId()))
-            {
-                return;
-            }
-                        
-            e.setCancelled(true);
             
-            shooters.add(p.getUniqueId());
-            
-            new BukkitRunnable()
-            {
-                @Override
-                public void run() 
-                {
-                    arrowPriority.apply(p).filter(Objects::nonNull)
-                            .filter(item -> item.getType().name().contains("ARROW"))
-                            .findFirst().ifPresent(used -> 
+            arrowPriority.apply(p)
+                    .filter(Objects::nonNull)
+                    .filter(item ->  e.getEntityType().name().contains(item.getType().name()))
+                    .findFirst().ifPresent(used -> 
+                    {
+                        getOptional(used, When.ARROW).ifPresent(info -> 
+                        {
+                            if(!info.checkConditions(p.getLocation(), p) || info.hasCooldown(p))
                             {
-                                Arrow arrow=spawnArrow(p, used);
-                                getOptional(used, When.ARROW).ifPresent(info -> 
-                                {
-                                    arrow.setMetadata(ARROW_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
-                                    
-                                    decreaseArrow(info, used, p.getInventory());
-                                });
-                                
-                                arrow.setCritical(((Arrow)e.getEntity()).isCritical());
-                                arrow.setVelocity(e.getEntity().getVelocity());
-                            });
-                }
+                                e.setCancelled(true);
+                                return;
+                            }
 
-            }.runTaskLater(JavaPlugin.getProvidingPlugin(ItemListener.class), 1L);
+                            e.getEntity().setMetadata(ARROW_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
+                            
+                            if(MCVersion.V1_8.isEqual() && !info.removeOnUse)
+                            {
+                                p.getInventory().addItem(used);
+                            }
+                        });
+                    });
         }
     }
     
-    private void decreaseArrow(final ItemInfo info, final ItemStack item, final Inventory i)
+    private Arrow spawnArrow(final ProjectileSource source, final ItemStack item)
     {
-        if(info.hasWhen(When.ARROW) && MCVersion.V1_9.isHigher())
+        switch(item.getType())
         {
-            Utils.decreaseItemStack(item, i);
-            return;
-        }
+            case ARROW:
+                return source.launchProjectile(Arrow.class);
+            case TIPPED_ARROW:
+                Arrow arrow=source.launchProjectile(TippedArrow.class);
 
-        if(info.removeOnUse)
-        {
-            Utils.decreaseItemStack(item, i);
+                PotionMeta meta=(PotionMeta)item.getItemMeta();
+                
+                meta.getCustomEffects().forEach(pe -> ((TippedArrow)arrow).addCustomEffect(pe, true));
+                if(MCVersion.V1_11.isHigher() && meta.hasColor()) 
+                { 
+                    ((TippedArrow)arrow).setColor(meta.getColor()); 
+                }
+                return arrow;
+            case SPECTRAL_ARROW:
+                return source.launchProjectile(SpectralArrow.class);
+            default:
+                return null;
         }
     }
     
@@ -274,7 +287,7 @@ public class ItemListener implements Listener
         if(e.getEntity().hasMetadata(ARROW_METADATA))
         {
             ItemInfo info = ((ItemInfo)e.getEntity().getMetadata(ARROW_METADATA).get(0).value());
-            info.execute(e.getEntity().getLocation(), e.getEntity().getShooter() instanceof Player ? (Player)e.getEntity().getShooter() : null);
+            info.execute(e.getEntity().getLocation(), e.getEntity().getShooter() instanceof Player ? (Player)e.getEntity().getShooter() : null, false);
             
             if(info.removeOnUse)
             {
@@ -292,7 +305,7 @@ public class ItemListener implements Listener
             {
                 if(info.hasWhen(When.DROP))
                 {
-                    info.execute(e.getPlayer().getLocation(), e.getPlayer());
+                    info.execute(e.getPlayer().getLocation(), e.getPlayer(), false);
                     
                     if(info.removeOnUse)
                     {
@@ -322,7 +335,7 @@ public class ItemListener implements Listener
                             {
                                 this.cancel();
                                 
-                                info.execute(e.getItemDrop().getLocation(), e.getPlayer());
+                                info.execute(e.getItemDrop().getLocation(), e.getPlayer(), false);
                                 if(info.removeOnUse)
                                 {
                                     if(e.getItemDrop().getItemStack().getAmount()==1)
@@ -363,13 +376,13 @@ public class ItemListener implements Listener
                             {
                                 if(info.hasWhen(When.ATTACKSELF))
                                 {
-                                    info.execute(p.getLocation(), p);
+                                    info.execute(p.getLocation(), p, true);
                                 }
                             
                                 if(e.getEntityType() == EntityType.PLAYER && info.hasWhen(When.ATTACKOTHER))
                                 {
                                     Player other = (Player)e.getEntity();
-                                    info.execute(other.getLocation(), other);
+                                    info.execute(other.getLocation(), other, true);
                                 }
                             }
                             
@@ -396,7 +409,7 @@ public class ItemListener implements Listener
                 .ifPresent(info -> 
                 {
                     Location l = e.getBlock().getLocation().add(0.5, 1, 0.5);
-                    info.execute(l, e.getPlayer());
+                    info.execute(l, e.getPlayer(), true);
                     
                     if(!info.removeOnUse)
                     {
@@ -425,32 +438,8 @@ public class ItemListener implements Listener
                             BlockManager.getInstance().removeBlock(e.getTo().getBlock().getLocation());
                         }
                         
-                        info.execute(e.getTo(), e.getPlayer());
+                        info.execute(e.getTo(), e.getPlayer(), true);
                     });
-        }
-    }
-    
-    private Arrow spawnArrow(final ProjectileSource source, final ItemStack item)
-    {
-        switch(item.getType())
-        {
-            case ARROW:
-                return source.launchProjectile(Arrow.class);
-            case TIPPED_ARROW:
-                Arrow arrow=source.launchProjectile(TippedArrow.class);
-
-                PotionMeta meta=(PotionMeta)item.getItemMeta();
-                
-                meta.getCustomEffects().forEach(pe -> ((TippedArrow)arrow).addCustomEffect(pe, true));
-                if(MCVersion.V1_11.isHigher() && meta.hasColor()) 
-                { 
-                    ((TippedArrow)arrow).setColor(meta.getColor()); 
-                }
-                return arrow;
-            case SPECTRAL_ARROW:
-                return source.launchProjectile(SpectralArrow.class);
-            default:
-                return null;
         }
     }
     
@@ -468,7 +457,7 @@ public class ItemListener implements Listener
                     {
                         Player p =  e.getEntity().getShooter() instanceof Player ? (Player)e.getEntity().getShooter() : null;
                         
-                        info.execute(e.getEntity().getLocation(), p);
+                        info.execute(e.getEntity().getLocation(), p, false);
                     }
                     
                     if(info.hasWhen(When.LINGERING))

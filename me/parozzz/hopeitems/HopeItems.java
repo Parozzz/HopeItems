@@ -9,13 +9,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import me.parozzz.hopeitems.items.BlockManager;
 import me.parozzz.hopeitems.items.ItemListener;
 import me.parozzz.hopeitems.items.managers.explosive.ExplosiveManager;
@@ -25,11 +20,9 @@ import me.parozzz.hopeitems.shop.Shop;
 import me.parozzz.hopeitems.utilities.MCVersion;
 import me.parozzz.hopeitems.utilities.Utils;
 import org.bukkit.Bukkit;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
-import org.bukkit.inventory.Recipe;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -46,7 +39,13 @@ public class HopeItems extends JavaPlugin
         {
             setupDependency();
             
-            Configs.initConfig(Utils.fileStartup(new File(this.getDataFolder(), "config.yml")));
+            FileConfiguration config = Utils.fileStartup(new File(this.getDataFolder(), "config.yml"));
+            if(config.getBoolean("metric", true))
+            {
+                Bukkit.getLogger().info("OK");
+                new MetricsLite(this);
+            }
+            Configs.initConfig(config);
             Configs.initItems(Utils.fileStartup(new File(this.getDataFolder(), "items.yml")), false);
             
             MobManager.registerListener();

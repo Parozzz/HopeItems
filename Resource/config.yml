@@ -1,3 +1,4 @@
+metric: true #Send data to bStats for monitoring plugin usage
 Messages:
   Shop:
     low_money: "&cYou don't have enough money. &7Needed: &2&l{money}"
@@ -6,6 +7,7 @@ CommandMessages:
   Help:
     getitem: "&b/items getitem *itemname* <amount>"
     giveitem: "&b/items giveitem *player* *itemname* <amount>"
+    execute: "&b/items execute *player* *itemName* <-c>"
     shop: "&b/items shop *shopName*"
     shoplist: "&b/items shoplist"
     list: "&b/items list"

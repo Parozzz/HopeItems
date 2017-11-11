@@ -275,6 +275,7 @@ explodingDiamond:
         Preview:
           id: potion
           name: "&7Potion"
+        chance: 20
   Crafting:
     type: shapeless
     material:
@@ -292,6 +293,20 @@ explodingDiamond:
 #  Crafting:
 #    type: furnace
 #    source: diamond:0
+teleportArrow:
+  when:
+    - arrow
+  Item:
+    id: arrow
+    name: "&cTeleport Arrow"
+  removeOnUse: false
+  Action:
+    player:
+      - chat: "&fYou all can find me in {world} at {x} {y} {z}!"
+    playerEffect:
+      #- sound: name:ENTITY_EXPERIENCE_ORB_PICKUP,volume:1,pitch:1
+      - particle: name:spell_mob,effect:static,quantity:100
+      - teleport: true
 mobEgg:
   Item:
     id: monster_egg

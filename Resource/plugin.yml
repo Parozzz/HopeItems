@@ -5,7 +5,7 @@ main: me.parozzz.hopeitems.HopeItems
 commands:
   items:
     aliases: [hpi]
-    Usage: /item
+    Usage: /items
     Description: Main Command
 softdepend: [Vault,WorldGuard]
 

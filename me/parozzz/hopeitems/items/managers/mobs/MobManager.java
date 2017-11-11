@@ -165,13 +165,10 @@ public class MobManager
             @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
             private void onEntityTarget(final EntityTargetEvent e)
             {
-                Optional.ofNullable(customMobs.get(e.getTarget().getUniqueId())).ifPresent(manager -> 
-                {
-                    if(e.getEntity().hasMetadata(MINION))
-                    {
-                        e.setCancelled(true);
-                    }
-                });
+                Optional.ofNullable(e.getTarget())
+                        .map(target -> customMobs.get(target.getUniqueId()))
+                        .filter(manager -> e.getEntity().hasMetadata(MINION))
+                        .ifPresent(manager -> e.setCancelled(true));
             }
             
             @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
