@@ -8,7 +8,6 @@ package me.parozzz.hopeitems.items.managers.lucky;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 import me.parozzz.hopeitems.items.managers.lucky.animations.Animation;
 import me.parozzz.hopeitems.items.managers.lucky.animations.AnimationRunnable;
@@ -53,7 +52,6 @@ public class LuckyManager
         AnimationType type;
         try { type=AnimationType.valueOf(path.getString("animation").toUpperCase()); }
         catch(final IllegalArgumentException t) { throw new IllegalArgumentException("An animation called "+path.getString("animation")+" does not exist"); }
-        Bukkit.getLogger().info(type.name());
         
         switch(type)
         {

@@ -10,7 +10,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import me.parozzz.hopeitems.Configs;
@@ -47,7 +46,6 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.inventory.Inventory;
@@ -102,7 +100,7 @@ public class ItemListener implements Listener
                         BlockManager.getInstance().removeBlock(e.getClickedBlock());
                     }
                     
-                    info.executeActionsAndSpawn(e.getClickedBlock().getLocation().add(0.5, 1, 0.5), e.getPlayer());
+                    info.execute(e.getClickedBlock().getLocation().add(0.5, 1, 0.5), e.getPlayer());
                 });
         
         Optional.ofNullable(e.getItem()).ifPresent(item -> 
@@ -120,9 +118,10 @@ public class ItemListener implements Listener
 
                     final Location l=Optional.ofNullable(e.getClickedBlock())
                             .map(Block::getLocation)
+                            .map(temp -> temp.add(0.5, 1, 0.5))
                             .orElseGet(() -> e.getPlayer().getLocation());
 
-                    info.executeAll(l, e.getPlayer(), item);
+                    info.executeWithItem(l, e.getPlayer(), item);
                 }
                 else if(Utils.or(e.getAction(), Action.RIGHT_CLICK_AIR, Action.RIGHT_CLICK_BLOCK) && item.getType().name().contains("POTION") && 
                         (info.hasWhen(When.SPLASH) || info.hasWhen(When.LINGERING)))
@@ -150,7 +149,7 @@ public class ItemListener implements Listener
         {
             e.setCancelled(true);
             
-            info.executeAll(e.getPlayer().getLocation(), e.getPlayer(), e.getItem());
+            info.executeWithItem(e.getPlayer().getLocation(), e.getPlayer(), e.getItem());
         });
     }
     
@@ -159,11 +158,7 @@ public class ItemListener implements Listener
     {
         getOptional(e.getEntity().getItem(), When.CONSUME).ifPresent(info -> 
         {
-            e.getAffectedEntities().stream().filter(Player.class::isInstance).map(Player.class::cast).forEach(p -> 
-            {
-                info.executeActions(p.getLocation(), p);
-                info.executeLucky(p);
-            });
+            e.getAffectedEntities().stream().filter(Player.class::isInstance).map(Player.class::cast).forEach(p -> info.execute(p.getLocation(), p));
             info.spawnMobs(e.getEntity().getLocation());
         });
     }
@@ -188,7 +183,7 @@ public class ItemListener implements Listener
             e.setCancelled(true);
             if(info.hasWhen(When.DISPENSE))
             {      
-                info.executeActionsAndSpawn(e.getBlock().getRelative(((DirectionalContainer)e.getBlock().getState().getData()).getFacing()).getLocation().add(0.5,0.5,0.5), null);
+                info.execute(e.getBlock().getRelative(((DirectionalContainer)e.getBlock().getState().getData()).getFacing()).getLocation().add(0.5,0.5,0.5), null);
             }
             else if(used.getType().name().contains("ARROW") && info.hasWhen(When.ARROW))
             {
@@ -279,10 +274,8 @@ public class ItemListener implements Listener
         if(e.getEntity().hasMetadata(ARROW_METADATA))
         {
             ItemInfo info = ((ItemInfo)e.getEntity().getMetadata(ARROW_METADATA).get(0).value());
+            info.execute(e.getEntity().getLocation(), e.getEntity().getShooter() instanceof Player ? (Player)e.getEntity().getShooter() : null);
             
-            Player p=e.getEntity().getShooter() instanceof Player ? (Player)e.getEntity().getShooter() : null;
-            info.executeActionsAndSpawn(e.getEntity().getLocation(), p);
-            Optional.ofNullable(p).ifPresent(info::executeLucky);
             if(info.removeOnUse)
             {
                 e.getEntity().remove();
@@ -299,8 +292,8 @@ public class ItemListener implements Listener
             {
                 if(info.hasWhen(When.DROP))
                 {
-                    info.executeActionsAndSpawn(e.getPlayer().getLocation(), e.getPlayer());
-                    info.executeLucky(e.getPlayer());
+                    info.execute(e.getPlayer().getLocation(), e.getPlayer());
+                    
                     if(info.removeOnUse)
                     {
                         if(e.getItemDrop().getItemStack().getAmount()==1)
@@ -329,8 +322,7 @@ public class ItemListener implements Listener
                             {
                                 this.cancel();
                                 
-                                info.executeActionsAndSpawn(e.getItemDrop().getLocation(), e.getPlayer());
-                                info.executeLucky(e.getPlayer());
+                                info.execute(e.getItemDrop().getLocation(), e.getPlayer());
                                 if(info.removeOnUse)
                                 {
                                     if(e.getItemDrop().getItemStack().getAmount()==1)
@@ -371,16 +363,13 @@ public class ItemListener implements Listener
                             {
                                 if(info.hasWhen(When.ATTACKSELF))
                                 {
-                                    info.executeActionsAndSpawn(p.getLocation(), p);
-                                    info.executeLucky(p);
+                                    info.execute(p.getLocation(), p);
                                 }
                             
                                 if(e.getEntityType() == EntityType.PLAYER && info.hasWhen(When.ATTACKOTHER))
                                 {
                                     Player other = (Player)e.getEntity();
-                                    
-                                    info.executeActionsAndSpawn(other.getLocation(), other);
-                                    info.executeLucky(other);
+                                    info.execute(other.getLocation(), other);
                                 }
                             }
                             
@@ -393,12 +382,9 @@ public class ItemListener implements Listener
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
     private void onBlockPlace(final BlockPlaceEvent e)
     {
-        getOptional(e.getItemInHand(), When.BLOCKINTERACT, When.BLOCKSTEP).ifPresent(info -> 
+        getOptional(e.getItemInHand(), When.BLOCKINTERACT, When.BLOCKSTEP, When.BLOCKDESTROY).ifPresent(info -> 
         {
-            if(info.checkConditions(e.getBlockPlaced().getLocation(), e.getPlayer()))
-            {
-                BlockManager.getInstance().addBlock(e.getBlockPlaced(), info);
-            }
+            BlockManager.getInstance().addBlock(e.getBlockPlaced(), info);
         });
     }
     
@@ -410,8 +396,7 @@ public class ItemListener implements Listener
                 .ifPresent(info -> 
                 {
                     Location l = e.getBlock().getLocation().add(0.5, 1, 0.5);
-                    info.executeActions(l, e.getPlayer());
-                    info.executeLucky(e.getPlayer());
+                    info.execute(l, e.getPlayer());
                     
                     if(!info.removeOnUse)
                     {
@@ -440,8 +425,7 @@ public class ItemListener implements Listener
                             BlockManager.getInstance().removeBlock(e.getTo().getBlock().getLocation());
                         }
                         
-                        info.executeActionsAndSpawn(e.getTo(), e.getPlayer());
-                        info.executeLucky(e.getPlayer());
+                        info.execute(e.getTo(), e.getPlayer());
                     });
         }
     }
@@ -484,8 +468,7 @@ public class ItemListener implements Listener
                     {
                         Player p =  e.getEntity().getShooter() instanceof Player ? (Player)e.getEntity().getShooter() : null;
                         
-                        info.executeActions(e.getEntity().getLocation(), p);
-                        Optional.ofNullable(p).ifPresent(info::executeLucky);
+                        info.execute(e.getEntity().getLocation(), p);
                     }
                     
                     if(info.hasWhen(When.LINGERING))

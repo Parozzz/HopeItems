@@ -28,7 +28,7 @@ public class LuckyReward
     {
         preview=Optional.ofNullable(path.getConfigurationSection("Preview")).map(Utils::getItemByPath).orElse(null);
         items=path.getStringList("items").stream().collect(Collectors.toSet());
-        chance=path.getInt("chance");
+        chance=path.getInt("chance", 10);
     }
     
     public ItemStack getPreview()

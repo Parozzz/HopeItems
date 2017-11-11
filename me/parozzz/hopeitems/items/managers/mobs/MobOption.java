@@ -9,7 +9,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 import me.parozzz.hopeitems.HopeItems;
 import me.parozzz.hopeitems.items.managers.ManagerUtils;
 import me.parozzz.hopeitems.utilities.Debug;

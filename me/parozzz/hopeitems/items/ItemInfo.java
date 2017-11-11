@@ -22,6 +22,7 @@ import me.parozzz.hopeitems.items.managers.lucky.LuckyManager;
 import me.parozzz.hopeitems.items.managers.mobs.MobManager;
 import me.parozzz.hopeitems.utilities.Utils;
 import me.parozzz.hopeitems.utilities.placeholders.ItemPlaceholder;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -157,24 +158,28 @@ public class ItemInfo
         return actions;
     }
     
-    public void executeAll(final Location l, final Player p, final ItemStack item)
+    public void executeWithItem(final Location l, final Player p, final ItemStack item)
     {
-        if(checkConditions(l, p) && !hasCooldown(p))
+        if(execute(l, p) && removeOnUse)
         {
-            executeActionsAndSpawn(l, p);
-            executeLucky(p);
-            
-            if(removeOnUse)
-            {
-                Utils.decreaseItemStack(item, p.getInventory());
-            }
+            Utils.decreaseItemStack(item, p.getInventory());
         }
     }
     
-    public void executeActionsAndSpawn(final Location l, final Player p)
+    public boolean execute(final Location l, final Player p)
     {
-        executeActions(l, p);
-        spawnMobs(l);
+        if(checkConditions(l, p) && !hasCooldown(p))
+        {
+            spawnMobs(l);
+            executeActions(l, p);
+            if(p != null)
+            {
+                executeLucky(p);
+            }
+            
+            return true;
+        }
+        return false;
     }
     
     public boolean checkConditions(final Location l, final Player p)

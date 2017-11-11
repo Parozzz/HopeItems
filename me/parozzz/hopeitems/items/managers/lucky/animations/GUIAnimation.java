@@ -15,6 +15,7 @@ import me.parozzz.hopeitems.items.managers.lucky.LuckyManager;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyReward;
 import me.parozzz.hopeitems.utilities.Utils;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -143,8 +144,11 @@ public class GUIAnimation implements Animation
             LuckyReward reward=map.get(winSlot);
             reward.getItems().forEach(info -> 
             {
-                p.getInventory().addItem(info.getItem().parse(p, p.getLocation()));
-                info.executeActionsAndSpawn(p.getLocation(), p);
+                Location l = p.getLocation();
+                
+                p.getInventory().addItem(info.getItem().parse(p, l));
+                info.executeActions(l, p);
+                info.spawnMobs(l);
             });
             p.removeMetadata(LuckyManager.LUCKY_METADATA, JavaPlugin.getProvidingPlugin(GUIAnimation.class));
         }

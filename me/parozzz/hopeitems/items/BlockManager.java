@@ -8,12 +8,16 @@ package me.parozzz.hopeitems.items;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import me.parozzz.hopeitems.Configs;
 import me.parozzz.hopeitems.HopeItems;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -32,13 +36,10 @@ public class BlockManager
         return Optional.ofNullable(instance).orElseGet(() -> instance=new BlockManager());
     }
     
-    private final File data;
     private final Map<Location, ItemInfo> blocks; 
     private BlockManager()
     {
         blocks=new HashMap<>();
-        
-        data=new File(JavaPlugin.getProvidingPlugin(BlockManager.class).getDataFolder(), "blocks.yml");
     }
     
     public ItemInfo getBlockInfo(final Location l)
@@ -66,42 +67,37 @@ public class BlockManager
         return blocks.remove(l);
     }
     
-    public void saveBlocks()
+    public void saveBlocks(final FileConfiguration data)
     {
-        try 
+        data.set("blocks", blocks.entrySet().stream().map(e -> 
         {
-            data.createNewFile();
-            
-            FileConfiguration c=new YamlConfiguration();
-            blocks.forEach((l, info) -> c.set(info.getName(), l));
-
-            c.save(data);
-        } 
-        catch (IOException ex) 
-        {
-            Logger.getLogger(BlockManager.class.getName()).log(Level.SEVERE, null, ex);
-        }
+            Map<String, Location> map = new LinkedHashMap<>();
+            map.put(e.getValue().getName(), e.getKey());
+            return map;
+        }).collect(Collectors.toList()));
     }
     
-    public void loadBlocks()
+    public boolean oldMethod()
     {
-        if(data.exists())
+        return new File(JavaPlugin.getProvidingPlugin(BlockManager.class).getDataFolder(), "blocks.yml").exists();
+    }
+    
+    public void loadBlocks(final FileConfiguration data)
+    {
+        Optional.of(new File(JavaPlugin.getProvidingPlugin(BlockManager.class).getDataFolder(), "blocks.yml")).filter(File::exists).ifPresent(File::delete);
+        
+        data.getMapList("blocks").stream().map(map -> (Map<String, Location>)map).map(Map::entrySet).flatMap(Set::stream).forEach(e -> 
         {
-            FileConfiguration c=YamlConfiguration.loadConfiguration(data);
-            c.getKeys(false).forEach(s -> 
+            Location l = e.getValue();
+            Optional.ofNullable(Configs.getItemInfo(e.getKey())).map(info -> 
             {
-                Location l=(Location)c.get(s);
-                Optional.ofNullable(Configs.getItemInfo(s)).map(info -> 
-                {
-                    addBlock(l, info);
-                    return null;
-                }).orElseGet(() -> 
-                {
-                    Logger.getLogger(HopeItems.class.getSimpleName()).log(Level.WARNING, "An item named {0} is not found. Skipping block at x:{1} y:{2} z:{3}", new Object[]{s, l.getBlockX(), l.getBlockY(), l.getBlockZ()});
-                    return null;
-                });
-                        
+                addBlock(l, info);
+                return l;
+            }).orElseGet(() -> 
+            {
+                Logger.getLogger(HopeItems.class.getSimpleName()).log(Level.WARNING, "An item named {0} is not found. Skipping block at x:{1} y:{2} z:{3}", new Object[]{e.getKey(), l.getBlockX(), l.getBlockY(), l.getBlockZ()});
+                return null;
             });
-        }
+        });
     }
 }

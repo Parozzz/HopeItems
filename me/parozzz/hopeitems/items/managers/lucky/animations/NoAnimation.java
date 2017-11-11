@@ -8,6 +8,7 @@ package me.parozzz.hopeitems.items.managers.lucky.animations;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyReward;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 /**
@@ -22,8 +23,11 @@ public class NoAnimation implements Animation
     {
         rewards.get(ThreadLocalRandom.current().nextInt(rewards.size())).getItems().forEach(info -> 
         {
-            p.getInventory().addItem(info.getItem().parse(p, p.getLocation()));
-            info.executeActionsAndSpawn(p.getLocation(), p);
+            Location l = p.getLocation();
+            
+            p.getInventory().addItem(info.getItem().parse(p, l));
+            info.executeActions(l, p);
+            info.spawnMobs(l);
         });
     }
     

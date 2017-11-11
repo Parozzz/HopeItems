@@ -10,8 +10,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import me.parozzz.hopeitems.items.managers.ManagerUtils;
+import me.parozzz.hopeitems.items.managers.mobs.MobManager;
 import me.parozzz.hopeitems.utilities.Debug;
 import me.parozzz.hopeitems.utilities.classes.MapArray;
 import me.parozzz.hopeitems.utilities.reflection.API;
@@ -20,6 +20,7 @@ import me.parozzz.hopeitems.utilities.reflection.ParticleManager.ParticleEnum;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -74,7 +75,7 @@ public enum AbilityType
             {
                 if(ThreadLocalRandom.current().nextInt(101)<chance)
                 {
-                    IntStream.range(0, quantity).forEach(i -> mob.getWorld().spawnEntity(mob.getLocation(), et));
+                    IntStream.range(0, quantity).forEach(i -> mob.getWorld().spawnEntity(mob.getLocation(), et).setMetadata(MobManager.MINION, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(AbilityType.class), true)));
                 }
             };
         } 

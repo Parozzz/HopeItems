@@ -7,11 +7,15 @@ package me.parozzz.hopeitems;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import me.parozzz.hopeitems.items.BlockManager;
 import me.parozzz.hopeitems.items.ItemListener;
 import me.parozzz.hopeitems.items.managers.explosive.ExplosiveManager;
@@ -21,6 +25,10 @@ import me.parozzz.hopeitems.shop.Shop;
 import me.parozzz.hopeitems.utilities.MCVersion;
 import me.parozzz.hopeitems.utilities.Utils;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -30,6 +38,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public class HopeItems extends JavaPlugin
 {
+    private File dataFile;
     @Override
     public void onEnable()
     {
@@ -38,11 +47,15 @@ public class HopeItems extends JavaPlugin
             setupDependency();
             
             Configs.initConfig(Utils.fileStartup(new File(this.getDataFolder(), "config.yml")));
-            Configs.initItems(Utils.fileStartup(new File(this.getDataFolder(), "items.yml")));
+            Configs.initItems(Utils.fileStartup(new File(this.getDataFolder(), "items.yml")), false);
             
             MobManager.registerListener();
             ExplosiveManager.registerListener();
             LuckyManager.registerListener();
+            
+            FileConfiguration data = YamlConfiguration.loadConfiguration((dataFile = new File(this.getDataFolder(), "data.yml")));
+            BlockManager.getInstance().loadBlocks(data);
+            MobManager.loadData(data);
             
             if(Dependency.isEconomyHooked())
             {
@@ -66,8 +79,6 @@ public class HopeItems extends JavaPlugin
             }
             
             this.getCommand("items").setExecutor(new ItemsCommand());
-            
-            BlockManager.getInstance().loadBlocks();
         }
         catch(final FileNotFoundException | UnsupportedEncodingException t)
         {
@@ -78,30 +89,42 @@ public class HopeItems extends JavaPlugin
     
     public void reload() throws FileNotFoundException, UnsupportedEncodingException
     {
-        BlockManager.getInstance().saveBlocks();
-        
-        Set<Recipe> recipes=new HashSet<>();
-        Bukkit.recipeIterator().forEachRemaining(r -> 
+        FileConfiguration data = new YamlConfiguration();
+        BlockManager.getInstance().saveBlocks(data);
+        MobManager.saveData(data);
+        try 
         {
-            if(!Configs.customRecipes.remove(r))
-            {
-                recipes.add(r);
-            }
-        });
-        Bukkit.clearRecipes();
-        
-        recipes.forEach(Bukkit::addRecipe);
+            data.save(dataFile);
+        } 
+        catch (IOException ex) 
+        {
+            Logger.getLogger(HopeItems.class.getName()).log(Level.SEVERE, "[HopeItems] Something went wrong during data saving", ex);
+        }
         
         Configs.initConfig(Utils.fileStartup(new File(this.getDataFolder(), "config.yml")));
-        Configs.initItems(Utils.fileStartup(new File(this.getDataFolder(), "items.yml")));
+        Configs.initItems(Utils.fileStartup(new File(this.getDataFolder(), "items.yml")), true);
+        
         Shop.getInstance().loadConfig();
-        BlockManager.getInstance().loadBlocks();
+        BlockManager.getInstance().loadBlocks(data);
+        MobManager.loadData(data);
     }
     
     @Override
     public void onDisable()
     {
-        BlockManager.getInstance().saveBlocks();
+        try 
+        {
+            FileConfiguration data = new YamlConfiguration();
+            BlockManager.getInstance().saveBlocks(data);
+            MobManager.saveData(data);
+            data.save(dataFile);
+        } 
+        catch (IOException ex) 
+        {
+            Logger.getLogger(HopeItems.class.getName()).log(Level.SEVERE, "[HopeItems] Something went wrong during data saving", ex);
+        }
+        
+        HandlerList.unregisterAll(this);
     }
     
     private void setupDependency()

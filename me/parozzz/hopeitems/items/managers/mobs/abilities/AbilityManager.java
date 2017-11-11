@@ -5,16 +5,11 @@
  */
 package me.parozzz.hopeitems.items.managers.mobs.abilities;
 
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import me.parozzz.hopeitems.items.managers.mobs.MobManager;
 import me.parozzz.hopeitems.utilities.Debug;
 import me.parozzz.hopeitems.utilities.classes.ComplexMapList;
-import me.parozzz.hopeitems.utilities.classes.MapArray;
-import me.parozzz.hopeitems.utilities.classes.SimpleMapList;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.LivingEntity;
 
@@ -54,19 +49,23 @@ public class AbilityManager
         return resistArrow;
     }
     
-    public void triggerDirectAbility(final LivingEntity mob, final LivingEntity damaged)
+    public boolean triggerDirectAbility(final LivingEntity mob, final LivingEntity damaged)
     {
         if(ThreadLocalRandom.current().nextInt(101)<chance)
         {
             direct.accept(mob, damaged);
+            return true;
         }
+        return false;
     }
     
-    public void triggerPassiveAbility(final LivingEntity mob, final LivingEntity damager)
+    public boolean triggerPassiveAbility(final LivingEntity mob, final LivingEntity damager)
     {
         if(ThreadLocalRandom.current().nextInt(101)<chance)
         {
             passive.accept(mob, damager);
+            return true;
         }
+        return false;
     }
 }

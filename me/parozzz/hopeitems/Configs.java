@@ -70,9 +70,8 @@ public class Configs
         mPath.getConfigurationSection("Shop").getValues(false).forEach((s, o) -> shopMessages.put(ShopMessage.valueOf(s.toUpperCase()), Utils.color((String)o)));
     }
     
-    protected static final Set<Recipe> customRecipes=new HashSet<>();
     private static final Map<String, ItemInfo> items=new HashMap<>();
-    protected static void initItems(final FileConfiguration c)
+    protected static void initItems(final FileConfiguration c, final boolean reload)
     {
         c.getKeys(false).stream().map(c::getConfigurationSection).forEach(nPath -> 
         {
@@ -109,12 +108,12 @@ public class Configs
                 });
             });
             
-            Optional.ofNullable(nPath.getConfigurationSection("Mob")).ifPresent(mPath -> info.setMobManager(new MobManager(mPath)));
+            Optional.ofNullable(nPath.getConfigurationSection("Mob")).ifPresent(mPath -> info.setMobManager(new MobManager(info, mPath)));
             Optional.ofNullable(nPath.getConfigurationSection("Explosive")).ifPresent(ePath -> info.setExplosiveManager(new ExplosiveManager(ePath)));
             Optional.ofNullable(nPath.getConfigurationSection("Lucky")).ifPresent(lPath -> info.setLuckyManager(new LuckyManager(lPath)));
             items.put(name.toLowerCase(), info);
             
-            Optional.ofNullable(nPath.getConfigurationSection("Crafting")).ifPresent(cPath -> 
+            Optional.ofNullable(nPath.getConfigurationSection("Crafting")).filter(path -> !reload).ifPresent(cPath -> 
             {
                 Recipe r;
                 switch(Debug.validateEnum(cPath.getString("type"), RecipeType.class))
@@ -157,7 +156,6 @@ public class Configs
                         r=null;
                 }
                 Bukkit.addRecipe(r);
-                customRecipes.add(r);
             });
         });
     }

@@ -5,16 +5,26 @@
  */
 package me.parozzz.hopeitems.items.managers.mobs;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import me.parozzz.hopeitems.Configs;
+import me.parozzz.hopeitems.HopeItems;
+import me.parozzz.hopeitems.items.ItemInfo;
 import me.parozzz.hopeitems.items.managers.mobs.abilities.AbilityManager;
 import me.parozzz.hopeitems.items.managers.mobs.drops.DropManager;
 import me.parozzz.hopeitems.utilities.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -24,6 +34,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -39,13 +50,16 @@ public class MobManager
     private final static String ABILITY_METADATA="Hopeitems.ability";
     private final static String DROP_METADATA="Hopeitems.drops";
     
+    private final ItemInfo info;
     private final EntityType et;
     private Consumer<LivingEntity> option= liv -> {};
     private Consumer<EntityEquipment> armor= liv -> {};
     private AbilityManager ability;
     private DropManager drop;
-    public MobManager(final ConfigurationSection path)
+    
+    public MobManager(final ItemInfo info, final ConfigurationSection path)
     {
+        this.info=info;
         try { et=EntityType.valueOf(path.getString("type").toUpperCase()); }
         catch(final IllegalArgumentException t) { throw new IllegalArgumentException("Wrong entity type name"); }
         
@@ -76,24 +90,21 @@ public class MobManager
         Optional.ofNullable(path.getConfigurationSection("Drop")).ifPresent(dPath -> drop=new DropManager(this, dPath));
     }
     
-    public boolean hasAbilities()
+    private boolean hasAbilities()
     {
         return ability!=null;
     }
     
-    public boolean hasDrops()
+    private boolean hasDrops()
     {
         return drop!=null;
-    }
-    
-    public AbilityManager getAbilityManager()
-    {
-        return ability;
     }
     
     public LivingEntity spawnMob(final Location l)
     {
         LivingEntity liv=(LivingEntity)l.getWorld().spawnEntity(l, et);
+        liv.setRemoveWhenFarAway(false);
+        
         option.accept(liv);
         armor.accept(liv.getEquipment());
         if(this.hasAbilities())
@@ -105,48 +116,103 @@ public class MobManager
         {
             liv.setMetadata(DROP_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(MobManager.class), drop));
         }
+        
+        customMobs.put(liv.getUniqueId(), this);
         return liv;
     }
+    
+    private final static Map<UUID, MobManager> customMobs = new HashMap<>();
+    
+    public static void saveData(final FileConfiguration data)
+    {
+        data.set("mobs", customMobs.entrySet().stream().map(e -> 
+        {
+            Map<String, String> map = new LinkedHashMap<>();
+            map.put(e.getKey().toString(), e.getValue().info.getName());
+            return map;
+        }).collect(Collectors.toList()));
+    }
+    
+    public static void loadData(final FileConfiguration data)
+    {
+        data.getMapList("mobs").stream()
+                .map(map -> (Map<String, String>)map)
+                .map(Map::entrySet)
+                .flatMap(Set::stream)
+                .forEach(e -> 
+                {
+                    Optional.ofNullable(Configs.getItemInfo(e.getValue()))
+                            .filter(ItemInfo::hasMob)
+                            .map(info -> 
+                            {
+                                customMobs.put(UUID.fromString(e.getKey()), info.getMobManager());
+                                return info;
+                            })
+                            .orElseGet(() -> 
+                            {
+                                Logger.getLogger(HopeItems.class.getSimpleName()).log(Level.SEVERE, "A configuration item named {0} does not exist. Skipping mob with uuid {1}", new Object[]{e.getValue(), e.getKey()}); 
+                                return null;
+                            });
+                });
+    }
+    
+    public static final String MINION = "HopeItems.minion";
     
     public static void registerListener()
     {
         Bukkit.getPluginManager().registerEvents(new Listener()
         {
+            @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
+            private void onEntityTarget(final EntityTargetEvent e)
+            {
+                Optional.ofNullable(customMobs.get(e.getTarget().getUniqueId())).ifPresent(manager -> 
+                {
+                    if(e.getEntity().hasMetadata(MINION))
+                    {
+                        e.setCancelled(true);
+                    }
+                });
+            }
             
             @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
             private void onEntityDamage(final EntityDamageByEntityEvent e)
             {
                 if(e.getDamager() instanceof Arrow && e.getEntity().hasMetadata(ABILITY_METADATA))
                 {
-                    AbilityManager ability=(AbilityManager)e.getEntity().getMetadata(ABILITY_METADATA).get(0).value();
-                    e.setCancelled(ability.resistArrows());
-                    if(((Arrow)e.getDamager()).getShooter() instanceof LivingEntity)
+                    Optional.ofNullable(customMobs.get(e.getEntity().getUniqueId())).ifPresent(manager -> 
                     {
-                        ability.triggerPassiveAbility((LivingEntity) e.getEntity(), (LivingEntity) ((Arrow)e.getDamager()).getShooter());
-                    }
+                        if(manager.hasAbilities())
+                        {
+                            e.setCancelled(manager.ability.resistArrows());
+                            if(((Arrow)e.getDamager()).getShooter() instanceof LivingEntity)
+                            {
+                                manager.ability.triggerPassiveAbility((LivingEntity) e.getEntity(), (LivingEntity) ((Arrow)e.getDamager()).getShooter());
+                            }
+                        }
+                    });
                 }
                 else if(e.getDamager().getType().isAlive() && e.getEntity().getType().isAlive())
                 {
-                    if(e.getDamager().hasMetadata(ABILITY_METADATA))
-                    {
-                        ((AbilityManager)e.getDamager().getMetadata(ABILITY_METADATA).get(0).value())
-                                .triggerDirectAbility((LivingEntity)e.getDamager(), (LivingEntity)e.getEntity());
-                    }
-                    else if(e.getEntity().hasMetadata(ABILITY_METADATA))
-                    {
-                        ((AbilityManager)e.getEntity().getMetadata(ABILITY_METADATA).get(0).value())
-                                .triggerPassiveAbility((LivingEntity)e.getEntity(), (LivingEntity)e.getDamager());
-                    }
+                    LivingEntity damager = (LivingEntity)e.getDamager();
+                    LivingEntity damaged = (LivingEntity)e.getEntity();
+                    Optional.ofNullable(customMobs.get(e.getDamager().getUniqueId()))
+                            .map(directManager -> directManager.ability.triggerDirectAbility(damager, damaged))
+                            .orElseGet(() -> 
+                            {
+                                return Optional.ofNullable(customMobs.get(e.getEntity().getUniqueId()))
+                                        .map(passiveManager -> passiveManager.ability
+                                                .triggerPassiveAbility(damaged, damager))  
+                                        .orElse(true);
+                            });
                 }
             }
             
             @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
             private void onEntityDeath(final EntityDeathEvent e)
             {
-                if(e.getEntity().hasMetadata(DROP_METADATA))
-                {
-                    ((DropManager)e.getEntity().getMetadata(DROP_METADATA).get(0).value()).getRandomDrop().accept(e);
-                }
+                Optional.ofNullable(customMobs.remove(e.getEntity().getUniqueId()))
+                        .filter(MobManager::hasDrops)
+                        .ifPresent(manager -> manager.drop.getRandomDrop().accept(e));
             }
         }, JavaPlugin.getProvidingPlugin(MobManager.class));
     }
