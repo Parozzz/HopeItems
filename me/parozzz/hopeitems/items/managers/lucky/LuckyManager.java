@@ -95,8 +95,8 @@ public class LuckyManager
                     if(!an.isEnded())
                     {
                         an.end();
-                        e.getPlayer().removeMetadata(LUCKY_METADATA, JavaPlugin.getProvidingPlugin(LuckyManager.class));
                     }
+                    e.getPlayer().removeMetadata(LUCKY_METADATA, JavaPlugin.getProvidingPlugin(LuckyManager.class));
                 }
             }
         };

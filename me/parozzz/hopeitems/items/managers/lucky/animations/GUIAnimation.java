@@ -9,10 +9,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyManager;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyReward;
+import me.parozzz.hopeitems.utilities.MCVersion;
 import me.parozzz.hopeitems.utilities.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -32,15 +35,18 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class GUIAnimation implements Animation
 {
     private Inventory i;
+    
     private final List<Integer> slots;
     private final int winSlot;
-    private final int roll;
+    private final int rolls;
+    
     public GUIAnimation(final ConfigurationSection path)
     {
         i=Bukkit.createInventory(null, path.getInt("rows")*9, Utils.color(path.getString("title")));
+        
         slots=Stream.of(path.getString("slot").split(",")).map(Integer::valueOf).collect(Collectors.toList());
         winSlot=path.getInt("winSlot");
-        roll=path.getInt("roll");
+        rolls=path.getInt("roll");
         
         ConfigurationSection iPath=path.getConfigurationSection("Items");
         iPath.getKeys(false).stream().map(iPath::getConfigurationSection).forEach(sPath -> 
@@ -52,7 +58,7 @@ public class GUIAnimation implements Animation
     
     
     @Override
-    public void roll(List<LuckyReward> rewards, Player p) 
+    public void roll(final List<LuckyReward> rewards, final Player p) 
     {
         Inventory i = Utils.cloneChestInventory(this.i);
         
@@ -70,7 +76,7 @@ public class GUIAnimation implements Animation
         
         Roll roll=new Roll(p, map, i, rewards);
         p.setMetadata(LuckyManager.LUCKY_METADATA, new FixedMetadataValue(plugin, roll));
-        roll.runTaskTimer(plugin, 3L, 3L);
+        roll.runTaskTimer(plugin, 2L, 2L);
     }
     
     private class Roll extends BukkitRunnable implements AnimationRunnable
@@ -82,35 +88,18 @@ public class GUIAnimation implements Animation
         
         public Roll(final Player p, final Map<Integer, LuckyReward> map, final Inventory i, final List<LuckyReward> rewards)
         {
-            this.p=p;
-            this.map=map;
-            this.i=i;
-            this.rewards=rewards;
+            this.p = p;
+            this.map = map;
+            this.i = i;
+            this.rewards = rewards;
         }
         
-        private Roll setRun(final int run) 
-        {
-            this.run=run; 
-            return this;
-        }
-        
-        private boolean isEnded = false;
         @Override
         public void end()
         {
-            isEnded = true;
-            for(int j=run;j<roll;j++) 
-            {
-                change(); 
-            }
+            IntStream.range(0, rolls).forEach(i -> change());
             reward();
             this.cancel();
-        }
-        
-        @Override
-        public boolean isEnded()
-        {
-            return isEnded;
         }
         
         private int run=0;     
@@ -118,19 +107,49 @@ public class GUIAnimation implements Animation
         public void run() 
         {
             run++;
-            if(run==roll/2)
+            if(run == (int)(rolls/3))
+            {
+                this.cancel();
+                p.setMetadata(LuckyManager.LUCKY_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(GUIAnimation.class),newRun(3L)));
+                return; 
+            }
+            else if(run == (int)(rolls/2.7))
+            {
+                this.cancel();
+                p.setMetadata(LuckyManager.LUCKY_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(GUIAnimation.class),newRun(4L)));
+                return;
+            }
+            else if(run == (int)(rolls/2.3))
             {
                 this.cancel();
                 p.setMetadata(LuckyManager.LUCKY_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(GUIAnimation.class),newRun(5L)));
                 return;
             }
-            else if(run==(int)(roll/1.2))
+            else if(run == (int)(rolls/2))
             {
                 this.cancel();
-                p.setMetadata(LuckyManager.LUCKY_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(GUIAnimation.class),newRun(15L)));
+                p.setMetadata(LuckyManager.LUCKY_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(GUIAnimation.class),newRun(6L)));
                 return;
             }
-            else if(run>=roll)
+            else if(run == (int)(rolls/1.7))
+            {
+                this.cancel();
+                p.setMetadata(LuckyManager.LUCKY_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(GUIAnimation.class),newRun(7L)));
+                return;
+            }
+            else if(run == (int)(rolls/1.3))
+            {
+                this.cancel();
+                p.setMetadata(LuckyManager.LUCKY_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(GUIAnimation.class),newRun(8L)));
+                return;
+            }
+            else if(run == (int) (rolls/1.1))
+            {
+                this.cancel();
+                p.setMetadata(LuckyManager.LUCKY_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(GUIAnimation.class),newRun(9L)));
+                return;
+            }
+            else if(run>=rolls)
             {
                 reward();
                 this.cancel();
@@ -140,13 +159,39 @@ public class GUIAnimation implements Animation
             change();
         }
         
+        private final Sound sound = Sound.valueOf(MCVersion.V1_8.isEqual() ? "ORB_PICKUP" : "ENTITY_EXPERIENCE_ORB_PICKUP");
+        private void change()
+        {
+            p.playSound(p.getLocation(), sound, 0.3F, 1F);
+            
+            LuckyReward nextReward=null;
+            for(int slot:slots)
+            {
+                if(nextReward==null)
+                {
+                    nextReward=map.get(slot);
+                    
+                    LuckyReward firstValue=rewards.get(ThreadLocalRandom.current().nextInt(rewards.size()));
+                    i.setItem(slot, firstValue.getPreview());
+                    map.replace(slot, nextReward, firstValue);
+                    
+                    continue;
+                }
+
+                i.setItem(slot, nextReward.getPreview());
+                nextReward=map.replace(slot, nextReward);
+            }
+        }
+        
         private Roll newRun(final long delay)
         {
-            Roll running=new Roll(p, map, i, rewards).setRun(run);
+            Roll running=new Roll(p, map, i, rewards);
+            running.run = run;
             running.runTaskTimer(JavaPlugin.getProvidingPlugin(GUIAnimation.class), delay, delay);
             return running;
         }
         
+        private boolean isEnded = false;
         private void reward()
         {
             isEnded = true;
@@ -154,33 +199,15 @@ public class GUIAnimation implements Animation
             reward.getItems().forEach(info -> 
             {
                 Location l = p.getLocation();
-                
                 p.getInventory().addItem(info.getItem().parse(p, l));
-                info.executeActions(l, p);
-                info.spawnMobs(l);
+                info.execute(l, p, false);
             });
         }
         
-        private void change()
+        @Override
+        public boolean isEnded()
         {
-            LuckyReward next=null;
-            for(int slot:slots)
-            {
-                if(next==null)
-                {
-                    next=map.get(slot);
-                    LuckyReward newValue=rewards.get(ThreadLocalRandom.current().nextInt(rewards.size()));
-                    i.setItem(slot, newValue.getPreview());
-                    map.replace(slot, next, newValue);
-                    continue;
-                }
-
-                LuckyReward lr=next;
-                next=map.get(slot);
-
-                i.setItem(slot, lr.getPreview());
-                map.put(slot, lr);
-            }
+            return isEnded;
         }
         
     }

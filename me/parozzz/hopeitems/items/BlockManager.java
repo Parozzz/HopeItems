@@ -6,7 +6,6 @@
 package me.parozzz.hopeitems.items;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -17,11 +16,9 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import me.parozzz.hopeitems.Configs;
 import me.parozzz.hopeitems.HopeItems;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**

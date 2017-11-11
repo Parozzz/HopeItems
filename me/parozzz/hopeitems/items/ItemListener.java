@@ -5,17 +5,17 @@
  */
 package me.parozzz.hopeitems.items;
 
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import me.parozzz.hopeitems.Configs;
 import me.parozzz.hopeitems.items.ItemInfo.When;
 import me.parozzz.hopeitems.utilities.MCVersion;
 import me.parozzz.hopeitems.utilities.Utils;
+import me.parozzz.hopeitems.utilities.classes.Task;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -49,14 +49,12 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.material.DirectionalContainer;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.projectiles.ProjectileSource;
-import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  *
@@ -64,6 +62,7 @@ import org.bukkit.scheduler.BukkitRunnable;
  */
 public class ItemListener implements Listener
 {
+    private final BiFunction<ItemStack, ProjectileSource, Arrow> shootArrow;
     private final Function<Player, Stream<ItemStack>> arrowPriority;
     private final Function<Player, ItemStack> itemEntityInteract;
     public ItemListener()
@@ -86,6 +85,32 @@ public class ItemListener implements Listener
                             return null;
                     }
                 };
+        
+        shootArrow = MCVersion.V1_8.isEqual() ?
+                (item, source) -> source.launchProjectile(Arrow.class) :
+                (item, source) -> 
+                {
+                    switch(item.getType())
+                    {
+                        case ARROW:
+                            return source.launchProjectile(Arrow.class);
+                        case TIPPED_ARROW:
+                            Arrow tipped = source.launchProjectile(TippedArrow.class);
+
+                            PotionMeta meta=(PotionMeta)item.getItemMeta();
+                            meta.getCustomEffects().forEach(pe -> ((TippedArrow)tipped).addCustomEffect(pe, true));
+                            if(MCVersion.V1_11.isHigher() && meta.hasColor()) 
+                            { 
+                                ((TippedArrow)tipped).setColor(meta.getColor()); 
+                            }
+
+                            return tipped;
+                        case SPECTRAL_ARROW:
+                            return source.launchProjectile(SpectralArrow.class);
+                        default:
+                            return null;
+                    }
+                };
     }
     
     @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
@@ -94,15 +119,8 @@ public class ItemListener implements Listener
         Optional.ofNullable(e.getClickedBlock())
                 .map(Block::getLocation)
                 .flatMap(l -> Optional.ofNullable(BlockManager.getInstance().getBlockInfo(l)))
-                .ifPresent(info -> 
-                {
-                    if(info.removeOnUse)
-                    {
-                        BlockManager.getInstance().removeBlock(e.getClickedBlock());
-                    }
-                    
-                    info.execute(e.getClickedBlock().getLocation().add(0.5, 1, 0.5), e.getPlayer(), true);
-                });
+                .filter(info -> info.execute(e.getClickedBlock().getLocation().add(0.5, 1, 0.5), e.getPlayer(), true) && info.removeOnUse)
+                .ifPresent(info -> BlockManager.getInstance().removeBlock(e.getClickedBlock()));
         
         Optional.ofNullable(e.getItem()).ifPresent(item -> 
         {
@@ -123,19 +141,6 @@ public class ItemListener implements Listener
                             .orElseGet(() -> e.getPlayer().getLocation());
 
                     info.executeWithItem(l, e.getPlayer(), item);
-                }
-                else if(Utils.or(e.getAction(), Action.RIGHT_CLICK_AIR, Action.RIGHT_CLICK_BLOCK) && item.getType().name().contains("POTION") && 
-                        (info.hasWhen(When.SPLASH) || info.hasWhen(When.LINGERING)))
-                {
-                    if(!info.checkConditions(e.getPlayer().getLocation(), e.getPlayer()) || info.hasCooldown(e.getPlayer()))
-                    {
-                        e.setCancelled(true);
-                    }
-                    else if(!info.removeOnUse)
-                    {
-                        e.setCancelled(true);
-                        e.getPlayer().launchProjectile(ThrownPotion.class).setItem(item);
-                    }
                 }
             });
         });
@@ -161,14 +166,17 @@ public class ItemListener implements Listener
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
     private void onPotionSplash(final PotionSplashEvent e)
     {
-        getOptional(e.getEntity().getItem(), When.CONSUME).ifPresent(info -> 
+        getOptional(e.getEntity().getItem(), When.SPLASH).ifPresent(info -> 
         {
-            e.getAffectedEntities().stream().filter(Player.class::isInstance).map(Player.class::cast).forEach(p -> info.execute(p.getLocation(), p, false));
+            e.getAffectedEntities().stream()
+                    .filter(Player.class::isInstance)
+                    .map(Player.class::cast)
+                    .forEach(p -> info.execute(p.getLocation(), p, false));
             info.spawnMobs(e.getEntity().getLocation());
         });
     }
     
-    private final static String ARROW_METADATA="CustomArrow";
+    private final static String ARROW_METADATA="HopeItems.CustomArrow";
     
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
     private void onDispense(final BlockDispenseEvent e)
@@ -178,10 +186,9 @@ public class ItemListener implements Listener
             return;
         }
         
-        ItemStack used=Stream.of(((Dispenser)e.getBlock().getState()).getInventory().getContents())
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(e.getItem());
+        Dispenser d = (Dispenser)e.getBlock().getState();
+        
+        ItemStack used = Stream.of(d.getInventory().getContents()).filter(Objects::nonNull).findFirst().orElse(e.getItem());
         
         getOptional(used).ifPresent(info -> 
         {
@@ -192,34 +199,26 @@ public class ItemListener implements Listener
             }
             else if(used.getType().name().contains("ARROW") && info.hasWhen(When.ARROW))
             {
-                spawnArrow(((Dispenser)e.getBlock().getState()).getBlockProjectileSource(), used)
-                        .setMetadata(ARROW_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
+                shootArrow.apply(used, d.getBlockProjectileSource()).setMetadata(ARROW_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
             }
             
             if(info.hasWhen(When.ARROW) || info.removeOnUse)
             {
-                if(Stream.of(((Dispenser)e.getBlock().getState()).getInventory().getContents()).allMatch(Objects::isNull))
+                if(used.getAmount() == 1 && Stream.of(d.getInventory().getContents()).allMatch(Objects::isNull))
                 {
-                    new BukkitRunnable()
-                    {
-                        @Override
-                        public void run() 
-                        {
-                            ((Dispenser)e.getBlock().getState()).getInventory().clear();
-                        }
-                    }.runTaskLater(JavaPlugin.getProvidingPlugin(ItemListener.class), 1L);
+                    Task.scheduleSync(1L, () -> d.getInventory().clear());
                 }
                 else
                 {
                     if(info.hasWhen(When.ARROW) && MCVersion.V1_9.isHigher())
                     {
-                        Utils.decreaseItemStack(used, ((Dispenser)e.getBlock().getState()).getInventory());
+                        Utils.decreaseItemStack(used, d.getInventory());
                         return;
                     }
-
+                    
                     if(info.removeOnUse)
                     {
-                        Utils.decreaseItemStack(used, ((Dispenser)e.getBlock().getState()).getInventory());
+                        Utils.decreaseItemStack(used, d.getInventory());
                     }
                 }
             }
@@ -227,9 +226,35 @@ public class ItemListener implements Listener
     }
     
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
-    private void onArrowLaunch(final ProjectileLaunchEvent e)
+    private void onProjectileLaunch(final ProjectileLaunchEvent e)
     {
-        if(e.getEntity() instanceof Arrow && e.getEntity().getShooter() instanceof Player)
+        if(e.getEntity() instanceof ThrownPotion && e.getEntity().getShooter() instanceof Player)
+        {
+            Player p = (Player)e.getEntity().getShooter();
+            
+            ItemStack item = ((ThrownPotion)e.getEntity()).getItem().clone();
+            item.setAmount(1);
+            
+            getOptional(item).ifPresent(info -> 
+            {
+                if(info.hasWhen(When.SPLASH) || info.hasWhen(When.LINGERING))
+                {
+                    if(!info.checkConditions(p.getLocation(), p) || info.hasCooldown(p))
+                    {
+                        e.setCancelled(true);
+                        if(p.getGameMode() != GameMode.CREATIVE)
+                        {
+                            Task.scheduleSync(1L, () -> p.getInventory().addItem(item));
+                        }
+                    }
+                    else if(p.getGameMode() !=GameMode.CREATIVE && !info.removeOnUse)
+                    {
+                        Task.scheduleSync(1L, () -> p.getInventory().addItem(item));
+                    }
+                }
+            });
+        }
+        else if(e.getEntity() instanceof Arrow && e.getEntity().getShooter() instanceof Player)
         {
             Player p = (Player)e.getEntity().getShooter();
             
@@ -257,38 +282,14 @@ public class ItemListener implements Listener
         }
     }
     
-    private Arrow spawnArrow(final ProjectileSource source, final ItemStack item)
-    {
-        switch(item.getType())
-        {
-            case ARROW:
-                return source.launchProjectile(Arrow.class);
-            case TIPPED_ARROW:
-                Arrow arrow=source.launchProjectile(TippedArrow.class);
-
-                PotionMeta meta=(PotionMeta)item.getItemMeta();
-                
-                meta.getCustomEffects().forEach(pe -> ((TippedArrow)arrow).addCustomEffect(pe, true));
-                if(MCVersion.V1_11.isHigher() && meta.hasColor()) 
-                { 
-                    ((TippedArrow)arrow).setColor(meta.getColor()); 
-                }
-                return arrow;
-            case SPECTRAL_ARROW:
-                return source.launchProjectile(SpectralArrow.class);
-            default:
-                return null;
-        }
-    }
-    
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
     private void onProjectileHit(final ProjectileHitEvent e)
     {
         if(e.getEntity().hasMetadata(ARROW_METADATA))
         {
             ItemInfo info = ((ItemInfo)e.getEntity().getMetadata(ARROW_METADATA).get(0).value());
-            info.execute(e.getEntity().getLocation(), e.getEntity().getShooter() instanceof Player ? (Player)e.getEntity().getShooter() : null, false);
             
+            info.execute(e.getEntity().getLocation(), e.getEntity().getShooter() instanceof Player ? (Player)e.getEntity().getShooter() : null, false);
             if(info.removeOnUse)
             {
                 e.getEntity().remove();
@@ -312,6 +313,7 @@ public class ItemListener implements Listener
                         if(e.getItemDrop().getItemStack().getAmount()==1)
                         {
                             e.getItemDrop().remove();
+                            return;
                         }
                         else
                         {
@@ -322,35 +324,27 @@ public class ItemListener implements Listener
                 
                 if(info.hasWhen(When.DROPONGROUND))
                 {
-                    new BukkitRunnable()
+                    Task.scheduleSyncTimer(1L, 1L, () -> 
                     {
-                        @Override
-                        public void run() 
+                        if(e.getItemDrop().isOnGround())
                         {
-                            if(!e.getItemDrop().isValid() || e.getItemDrop().isDead())
+                            info.execute(e.getItemDrop().getLocation(), e.getPlayer(), false);
+                            if(info.removeOnUse)
                             {
-                                this.cancel();
-                            }
-                            else if(e.getItemDrop().isOnGround())
-                            {
-                                this.cancel();
-                                
-                                info.execute(e.getItemDrop().getLocation(), e.getPlayer(), false);
-                                if(info.removeOnUse)
+                                if(e.getItemDrop().getItemStack().getAmount()==1)
                                 {
-                                    if(e.getItemDrop().getItemStack().getAmount()==1)
-                                    {
-                                        e.getItemDrop().remove();
-                                    }
-                                    else
-                                    {
-                                        e.getItemDrop().getItemStack().setAmount(e.getItemDrop().getItemStack().getAmount()-1);
-                                    } 
+                                    e.getItemDrop().remove();
                                 }
+                                else
+                                {
+                                    e.getItemDrop().getItemStack().setAmount(e.getItemDrop().getItemStack().getAmount()-1);
+                                } 
                             }
+                            return true;
                         }
-                    
-                    }.runTaskTimer(JavaPlugin.getProvidingPlugin(ItemListener.class), 2L, 1L);
+                        
+                        return !e.getItemDrop().isValid() || e.getItemDrop().isDead();
+                    });
                 }
             }
             else
@@ -372,21 +366,20 @@ public class ItemListener implements Listener
                     {
                         getOptional(hand, When.ATTACKSELF, When.ATTACKOTHER).ifPresent(info -> 
                         {
-                            if(info.checkConditions(p.getLocation(), p) && !info.hasCooldown(p))
+                            Location l = p.getLocation();
+                            if(info.checkConditions(l, p) && !info.hasCooldown(p))
                             {
                                 if(info.hasWhen(When.ATTACKSELF))
                                 {
-                                    info.execute(p.getLocation(), p, true);
+                                    info.execute(l, p, false);
                                 }
                             
                                 if(e.getEntityType() == EntityType.PLAYER && info.hasWhen(When.ATTACKOTHER))
                                 {
                                     Player other = (Player)e.getEntity();
-                                    info.execute(other.getLocation(), other, true);
+                                    info.execute(other.getLocation(), other, false);
                                 }
                             }
-                            
-                            
                         });
                     });
         }
@@ -395,27 +388,44 @@ public class ItemListener implements Listener
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
     private void onBlockPlace(final BlockPlaceEvent e)
     {
-        getOptional(e.getItemInHand(), When.BLOCKINTERACT, When.BLOCKSTEP, When.BLOCKDESTROY).ifPresent(info -> 
-        {
-            BlockManager.getInstance().addBlock(e.getBlockPlaced(), info);
-        });
+        getOptional(e.getItemInHand(), When.BLOCKINTERACT, When.BLOCKSTEP, When.BLOCKDESTROY)
+                .ifPresent(info -> BlockManager.getInstance().addBlock(e.getBlockPlaced(), info));
     }
     
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
     private void onBlockBreak(final BlockBreakEvent e)
     {
         Optional.ofNullable(BlockManager.getInstance().removeBlock(e.getBlock()))
-                .filter(info -> info.hasWhen(When.BLOCKDESTROY))
                 .ifPresent(info -> 
-                {
+                {              
                     Location l = e.getBlock().getLocation().add(0.5, 1, 0.5);
-                    info.execute(l, e.getPlayer(), true);
-                    
-                    if(!info.removeOnUse)
+                    if(info.hasWhen(When.BLOCKDESTROY))
+                    {
+                        if(info.execute(l, e.getPlayer(), true) && !info.removeOnUse)
+                        {
+                            this.cancelDrop(e);
+                            l.getWorld().dropItemNaturally(l, info.getItem().parse(e.getPlayer(), e.getBlock().getLocation()));
+                        }
+                    }
+                    else
                     {
                         l.getWorld().dropItemNaturally(l, info.getItem().parse(e.getPlayer(), e.getBlock().getLocation()));
+                        this.cancelDrop(e);
                     }
                 });
+    }
+    
+    private void cancelDrop(final BlockBreakEvent e)
+    {
+        if(MCVersion.V1_12.isHigher())
+        {
+            e.setDropItems(false);
+        }
+        else
+        {
+            e.setCancelled(true);
+            e.getBlock().setType(Material.AIR);
+        } 
     }
     
     @EventHandler(ignoreCancelled=false,priority=EventPriority.HIGHEST)
@@ -433,12 +443,10 @@ public class ItemListener implements Listener
                     .filter(info -> info.hasWhen(When.BLOCKSTEP))
                     .ifPresent(info -> 
                     {
-                        if(info.removeOnUse)
+                        if(info.execute(e.getTo(), e.getPlayer(), true) && info.removeOnUse)
                         {
                             BlockManager.getInstance().removeBlock(e.getTo().getBlock().getLocation());
                         }
-                        
-                        info.execute(e.getTo(), e.getPlayer(), true);
                     });
         }
     }
@@ -447,7 +455,7 @@ public class ItemListener implements Listener
     {
         Listener l=new Listener()
         {
-            private final String LINGERING_METADATA="CustomLingeringPotion";
+            private final String LINGERING_METADATA="HopeItems.CustomLingeringPotion";
             @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
             private void onLingeringSplash(final LingeringPotionSplashEvent e)
             {
@@ -455,9 +463,7 @@ public class ItemListener implements Listener
                 {
                     if(info.hasWhen(When.SPLASH))
                     {
-                        Player p =  e.getEntity().getShooter() instanceof Player ? (Player)e.getEntity().getShooter() : null;
-                        
-                        info.execute(e.getEntity().getLocation(), p, false);
+                        info.execute(e.getEntity().getLocation(), e.getEntity().getShooter() instanceof Player ? (Player)e.getEntity().getShooter() : null, false);
                     }
                     
                     if(info.hasWhen(When.LINGERING))
@@ -474,9 +480,9 @@ public class ItemListener implements Listener
                 {
                     e.setCancelled(true);
                     e.getArrow().remove();
-
-                    e.getPlayer().getInventory()
-                            .addItem(((ItemInfo)e.getArrow().getMetadata(ARROW_METADATA).get(0).value()).getItem().parse(e.getPlayer(), e.getArrow().getLocation()));
+                    
+                    ItemInfo info = (ItemInfo)e.getArrow().getMetadata(ARROW_METADATA).get(0).value();
+                    e.getPlayer().getInventory().addItem(info.getItem().parse(e.getPlayer(), e.getArrow().getLocation()));
                 }
             }
     
@@ -490,11 +496,7 @@ public class ItemListener implements Listener
                     e.getAffectedEntities().stream()
                             .filter(Player.class::isInstance)
                             .map(Player.class::cast)
-                            .forEach(p -> 
-                            {
-                                info.executeActions(p.getLocation(), p);
-                                info.executeLucky(p);
-                            });
+                            .forEach(p -> info.execute(p.getLocation(), p, false));
                 }
             }
         };

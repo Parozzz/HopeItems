@@ -57,6 +57,10 @@ public class Configs
     public static final Map<ShopMessage, String> shopMessages=new EnumMap(ShopMessage.class);
     protected static void initConfig(final FileConfiguration c)
     {
+        helpMessages.clear();
+        otherMessages.clear();
+        shopMessages.clear();
+        
         ConfigurationSection cmPath=c.getConfigurationSection("CommandMessages");
         
         cmPath.getConfigurationSection("Help").getValues(false).forEach((s,o) -> helpMessages.put(CommandEnum.valueOf(s.toUpperCase()), Utils.color((String)o)));
@@ -70,6 +74,7 @@ public class Configs
     private static final Map<String, ItemInfo> items=new HashMap<>();
     protected static void initItems(final FileConfiguration c, final boolean reload)
     {
+        items.clear();
         c.getKeys(false).stream().map(c::getConfigurationSection).forEach(nPath -> 
         {
             String name=nPath.getName();

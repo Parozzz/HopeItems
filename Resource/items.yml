@@ -1,9 +1,10 @@
-explodingDiamond:
+exampleItem:
   Item:
-    id: diamond
-    name: "&cExploding &fDiamond"
+    id: torch
+    name: "&6HopeItems &f&lExample &fItem"
     lore:
-      - "&7Throw it to create an explosion"
+      - "&7This is an example item from &6HoepItems"
+      - "&7It contains every reward you can get from this plugin!"
     amount: 1
     unbreakable: true
     flag:
@@ -45,9 +46,9 @@ explodingDiamond:
     default: 60 #Default time without any perms
     message: "&cYou are on cooldown. &fWait &l&f{time} &fsecs" #Message on cooldown. Set to "" to disable
     permissions: 
-      - explodingdiamond.vip.cooldown: 30 #permission: timeToWait
-      - explodingdiamond.vip+.cooldown: 10
-      - explodingdiamond.vip++.cooldown: 0
+      - exampleitem.vip.cooldown: 30 #permission: timeToWait
+      - exampleitem.vip+.cooldown: 10
+      - exampleitem.vip++.cooldown: 0
   Explosive:
     type: creeper #or TNT/Fireball
     option:
@@ -181,22 +182,22 @@ explodingDiamond:
       # - ylevel: <25
       - worldguard: value:spawn,message:&cGo to the spawn to use it
     player:
-      - permission: value:hopeitems.explodingdiamond.use,message:&cNo permission to use it
-      - gamemode: value:creative,message:&cYou need to use creative mode
+      - permission: value:exampleitem.use,message:&cNo permission to use it
+      - gamemode: value:creative,message:&cThe item need to be used in creative mode
       - sneaking: value:true,message:&cSneak next time!
-      - food: value:1~10,message:&cFood level is not right
-      # - food: value:10,message:&cFood_level_is_not_right
-      # - food: value:>10,message:&cFood_level_is_too_high
-      # - food: value:<10,message:&cFood_level_is_too_low
-      - exp: value:100~250,message:&cWrong exp level
+      - food: value:1~10,message:&cYou food bar is not in the right range! &f(1 to 10)
+      # - food: value:10,message:&cFood level is not right
+      # - food: value:>10,message:&cFood level is too high
+      # - food: value:<10,message:&cFood level is too low
+      - exp: value:100~250,message:&cYour exp level is not in the right range! &f(100 to 250)
       # - exp: 255
       # - exp: >255
       # - exp: <255
-      - level: value:1~10,message:&cWrong level
+      - level: value:1~10,message:&cYour level is not in the right range! &f(1 to 10)
       # - level: 5
       # - exp: >5
       # - exp: <5
-      - money: value:100~2000,message:&cWrong money range
+      - money: value:100~2000,message:&cYour money balance is not in the right range! &f(1 to 10)
       # - money: 2000
       # - money: >1000
       # - money: <1000
@@ -293,6 +294,35 @@ explodingDiamond:
 #  Crafting:
 #    type: furnace
 #    source: diamond:0
+explodingDiamond:
+  Item:
+    id: diamond
+    name: "&cExploding &fDiamond"
+    lore:
+      - "&7Throw it to create an explosion"
+    amount: 1
+    unbreakable: true
+    flag:
+      - hide_unbreakable
+      - hide_enchants
+    enchant:
+      - arrow_fire: 1
+      - durability: 1
+  when:
+    - dropOnGround
+  Cooldown:
+    default: 120 #Default time without any perms
+    message: "&cYou are on cooldown. &fWait &l&f{time} &fsecs" #Message on cooldown. Set to "" to disable
+    permissions: 
+      - explodingdiamond.vip.cooldown: 100 #permission: timeToWait
+      - explodingdiamond.vip+.cooldown: 80
+      - explodingdiamond.vip++.cooldown: 60
+  Action:
+    player:
+      - chat: "&fI made explode an &cExploding &fDiamond at &7{world} &fat &7{x} {y} {z}!"
+    worldEffect:
+      - thunder: false
+      - explosion: power:5,fire:true,damage:false
 teleportArrow:
   when:
     - arrow

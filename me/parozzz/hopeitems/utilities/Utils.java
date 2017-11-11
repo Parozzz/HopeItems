@@ -439,9 +439,9 @@ public final class Utils {
 
     public static void decreaseItemStack(final ItemStack item, final Inventory i)
     {
-        if(item.getAmount()==1)
+        if(item.getAmount() == 1)
         {
-            i.remove(item);
+            i.removeItem(item);
             return;
         }
         
@@ -576,6 +576,7 @@ public final class Utils {
                     {
                         potion.splash();
                     }
+                    
                     item=potion.toItemStack(1);
                 }
                 else

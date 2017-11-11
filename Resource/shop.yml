@@ -1,9 +1,9 @@
 #More infos here https://github.com/Parozzz/HopeItems/wiki/Shop
 Page1:
-  rows: 1
-  title: "&bBuy &2Ceggs"
+  rows: 1 #How many rows in the inventory
+  title: "&bBuy &2Ceggs" #The inventory name
   Items:
-    0,1,2,3:
+    0,1,2,3: #The slots in which this item will be, splitted by a ","
       id: STAINED_GLASS_PANE
       data: 15
       function: none
@@ -13,9 +13,9 @@ Page1:
       name: "&2Cegg"
       lore:
         - "&7Cost: &b&l100K"
-      function: buy
-      money: 100000
-      item: mobEgg
+      function: buy #Which function the item should have? None, buy or sell
+      money: 100000 #How much should it value?
+      item: mobEgg #The config name from items.yml of the item
     5,6,7:
       id: STAINED_GLASS_PANE
       data: 13

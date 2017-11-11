@@ -42,7 +42,6 @@ public class HopeItems extends JavaPlugin
             FileConfiguration config = Utils.fileStartup(new File(this.getDataFolder(), "config.yml"));
             if(config.getBoolean("metric", true))
             {
-                Bukkit.getLogger().info("OK");
                 new MetricsLite(this);
             }
             Configs.initConfig(config);
