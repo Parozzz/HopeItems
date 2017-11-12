@@ -35,7 +35,7 @@ public class ItemInfo
 {
     public enum When
     {
-        INTERACT, CONSUME, SPLASH, LINGERING, DISPENSE, ARROW, SNOWBALL,
+        INTERACT, CONSUME, SPLASH, LINGERING, DISPENSE, ARROW, SNOWBALL, PROJECTILEDAMAGE,
         ATTACKSELF, ATTACKOTHER,
         DROP, DROPONGROUND,
         BLOCKINTERACT, BLOCKSTEP, BLOCKDESTROY;
@@ -163,6 +163,7 @@ public class ItemInfo
         if(execute(l, p, true) && removeOnUse)
         {
             Utils.decreaseItemStack(item, p.getInventory());
+            p.updateInventory();
         }
     }
     

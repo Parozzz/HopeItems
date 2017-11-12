@@ -24,7 +24,9 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Dispenser;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.FishHook;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Snowball;
 import org.bukkit.entity.SpectralArrow;
 import org.bukkit.entity.ThrownPotion;
@@ -75,18 +77,11 @@ public class ItemListener implements Listener
         
         itemEntityInteract = MCVersion.V1_8.isEqual() ?
                 p -> p.getItemInHand() :
-                p ->
-                {
-                    switch(p.getMainHand())
-                    {
-                        case LEFT:
-                            return p.getInventory().getItemInOffHand();
-                        case RIGHT:
-                            return p.getInventory().getItemInMainHand();
-                        default:
-                            return null;
-                    }
-                };
+                p -> Optional.ofNullable(p.getInventory().getItemInMainHand())
+                        .filter(i -> i.getType()!=Material.AIR)
+                        .orElseGet(() -> Optional.ofNullable(p.getInventory().getItemInOffHand())
+                                .filter(i -> i.getType()!=Material.AIR)
+                                .orElse(null));
         
         shootArrow = MCVersion.V1_8.isEqual() ?
                 (item, source) -> source.launchProjectile(Arrow.class) :
@@ -253,12 +248,20 @@ public class ItemListener implements Listener
                             e.setCancelled(true);
                             if(p.getGameMode() != GameMode.CREATIVE)
                             {
-                                Task.scheduleSync(1L, () -> p.getInventory().addItem(item));
+                                Task.scheduleSync(1L, () -> 
+                                {
+                                    p.getInventory().addItem(item);
+                                    p.updateInventory();
+                                });
                             }
                         }
                         else if(p.getGameMode() !=GameMode.CREATIVE && !info.removeOnUse)
                         {
-                            Task.scheduleSync(1L, () -> p.getInventory().addItem(item));
+                            Task.scheduleSync(1L, () -> 
+                            {
+                                p.getInventory().addItem(item);
+                                p.updateInventory();
+                            });
                         }
                     }
                 });
@@ -284,9 +287,15 @@ public class ItemListener implements Listener
 
                                 e.getEntity().setMetadata(PROJECTILE_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
 
-                                if(MCVersion.V1_8.isEqual() && !info.removeOnUse)
+                                if(p.getGameMode()!=GameMode.CREATIVE && MCVersion.V1_8.isEqual() && !info.removeOnUse)
                                 {
-                                    p.getInventory().addItem(used);
+                                    Task.scheduleSync(1L, () -> 
+                                    {
+                                        ItemStack giveBack = used.clone();
+                                        giveBack.setAmount(1);
+                                        p.getInventory().addItem(giveBack);
+                                        p.updateInventory();
+                                    });
                                 }
                             });
                         });
@@ -301,10 +310,80 @@ public class ItemListener implements Listener
         {
             ItemInfo info = ((ItemInfo)e.getEntity().getMetadata(PROJECTILE_METADATA).get(0).value());
             
-            info.execute(e.getEntity().getLocation(), e.getEntity().getShooter() instanceof Player ? (Player)e.getEntity().getShooter() : null, false);
+            if(info.hasWhen(When.PROJECTILEDAMAGE))
+            {
+                Task.scheduleSync(1L, () -> 
+                {
+                    if(e.getEntity().hasMetadata(PROJECTILE_METADATA))
+                    {
+                        executeOnProjectileHit(e.getEntity(), info);
+                    }
+                }); 
+            }
+            else
+            {
+                executeOnProjectileHit(e.getEntity(), info);
+            }
+        }
+    }
+    
+    private void executeOnProjectileHit(final Projectile pj, final ItemInfo info)
+    {
+        if(pj instanceof Arrow && info.hasWhen(When.ARROW))
+        {
+            info.execute(pj.getLocation(), (Player)pj.getShooter(), false);
+
+            if(MCVersion.V1_8.isEqual() || info.removeOnUse)
+            {
+                pj.remove();
+            }
+        }
+        else if(pj instanceof Snowball && info.hasWhen(When.SNOWBALL))
+        {
+            info.execute(pj.getLocation(), (Player)pj.getShooter(), false);
+        }
+        
+        pj.removeMetadata(PROJECTILE_METADATA, JavaPlugin.getProvidingPlugin(ItemListener.class));
+    }
+    
+    @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
+    private void onDamage(final EntityDamageByEntityEvent e)
+    {
+        if(e.getDamager().getType() == EntityType.PLAYER)
+        {
+            Player p = (Player)e.getDamager();
+            Optional.ofNullable(Utils.getMainHand(p.getEquipment()))
+                    .filter(item -> item.getType()!=Material.AIR)
+                    .ifPresent(hand -> 
+                    {
+                        getOptional(hand, When.ATTACKSELF, When.ATTACKOTHER).ifPresent(info -> 
+                        {
+                            Location l = p.getLocation();
+                            if(info.checkConditions(l, p) && !info.hasCooldown(p))
+                            {
+                                if(info.hasWhen(When.ATTACKSELF))
+                                {
+                                    info.execute(l, p, false);
+                                }
+                            
+                                if(e.getEntityType() == EntityType.PLAYER && info.hasWhen(When.ATTACKOTHER))
+                                {
+                                    Player other = (Player)e.getEntity();
+                                    info.execute(other.getLocation(), other, false);
+                                }
+                            }
+                        });
+                    });
+        }
+        else if(e.getDamager() instanceof Projectile && e.getDamager().hasMetadata(PROJECTILE_METADATA))
+        {
+            ItemInfo info = (ItemInfo)e.getDamager().getMetadata(PROJECTILE_METADATA).get(0).value();
+            e.getDamager().removeMetadata(PROJECTILE_METADATA, JavaPlugin.getProvidingPlugin(ItemListener.class));
+
+            info.execute(e.getDamager().getLocation(), e.getEntityType() == EntityType.PLAYER ? (Player)e.getEntity() : null, false);
             if(info.removeOnUse)
             {
-                e.getEntity().remove();
+                e.getDamager().remove();
             }
         }
     }
@@ -365,38 +444,7 @@ public class ItemListener implements Listener
             }
         });
     }
-    
-    @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
-    private void onDamage(final EntityDamageByEntityEvent e)
-    {
-        if(e.getDamager().getType()==EntityType.PLAYER)
-        {
-            Player p = (Player)e.getDamager();
-            Optional.ofNullable(Utils.getMainHand(p.getEquipment()))
-                    .filter(item -> item.getType()!=Material.AIR)
-                    .ifPresent(hand -> 
-                    {
-                        getOptional(hand, When.ATTACKSELF, When.ATTACKOTHER).ifPresent(info -> 
-                        {
-                            Location l = p.getLocation();
-                            if(info.checkConditions(l, p) && !info.hasCooldown(p))
-                            {
-                                if(info.hasWhen(When.ATTACKSELF))
-                                {
-                                    info.execute(l, p, false);
-                                }
-                            
-                                if(e.getEntityType() == EntityType.PLAYER && info.hasWhen(When.ATTACKOTHER))
-                                {
-                                    Player other = (Player)e.getEntity();
-                                    info.execute(other.getLocation(), other, false);
-                                }
-                            }
-                        });
-                    });
-        }
-    }
-    
+
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
     private void onBlockPlace(final BlockPlaceEvent e)
     {
@@ -495,6 +543,7 @@ public class ItemListener implements Listener
                     
                     ItemInfo info = (ItemInfo)e.getArrow().getMetadata(PROJECTILE_METADATA).get(0).value();
                     e.getPlayer().getInventory().addItem(info.getItem().parse(e.getPlayer(), e.getArrow().getLocation()));
+                    e.getPlayer().updateInventory();
                 }
             }
     
