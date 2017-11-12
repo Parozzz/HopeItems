@@ -51,7 +51,7 @@ public class HopeItems extends JavaPlugin
             ExplosiveManager.registerListener();
             LuckyManager.registerListener();
             
-            (dataFile = new File(this.getDataFolder(), "data.yml")).mkdir();
+            (dataFile = new File(this.getDataFolder(), "data.yml")).createNewFile();
             FileConfiguration data = YamlConfiguration.loadConfiguration(dataFile);
             BlockManager.getInstance().loadBlocks(data);
             MobManager.loadData(data);
@@ -79,7 +79,7 @@ public class HopeItems extends JavaPlugin
             
             this.getCommand("items").setExecutor(new ItemsCommand());
         }
-        catch(final FileNotFoundException | UnsupportedEncodingException t)
+        catch(final IOException t)
         {
             Bukkit.getLogger().log(Level.SEVERE, "Problem loading the plugin. Disabling it", t);
             Bukkit.getServer().getPluginManager().disablePlugin(this);
