@@ -51,7 +51,8 @@ public class HopeItems extends JavaPlugin
             ExplosiveManager.registerListener();
             LuckyManager.registerListener();
             
-            FileConfiguration data = YamlConfiguration.loadConfiguration((dataFile = new File(this.getDataFolder(), "data.yml")));
+            (dataFile = new File(this.getDataFolder(), "data.yml")).mkdir();
+            FileConfiguration data = YamlConfiguration.loadConfiguration(dataFile);
             BlockManager.getInstance().loadBlocks(data);
             MobManager.loadData(data);
             

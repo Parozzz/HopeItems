@@ -294,6 +294,46 @@ exampleItem:
 #  Crafting:
 #    type: furnace
 #    source: diamond:0
+spawningSnowball:
+  Item:
+    id: snow_ball
+    name: "&2Zombie &fSnowball"
+    lore:
+      - "&7Throw it to spawn a zombie!"
+  when:
+    - snowball
+  Mob:
+    type: zombie
+    option:
+      - name: "&2Zombie"
+      - health: 0~40
+    Armor:
+      head:
+        id: chainmail_helmet
+        enchant:
+          - THORNS: 1
+        chance: 25
+      chest:
+        id: chainmail_chestplate
+        enchant:
+          - THORNS: 1
+        chance: 25
+      legs:
+        id: chainmail_leggings
+        enchant:
+          - THORNS: 1
+        chance: 25
+      feet:
+        id: chainmail_boots
+        enchant:
+          - THORNS: 1
+        chance: 25
+      hand:
+        id: stone_sword
+        enchant:
+          - damage_all: 2 
+        chance: 25
+      #off_hand:  #Only 1.9+
 explodingDiamond:
   Item:
     id: diamond

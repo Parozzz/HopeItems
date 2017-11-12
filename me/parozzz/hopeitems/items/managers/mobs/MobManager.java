@@ -107,17 +107,24 @@ public class MobManager
         
         option.accept(liv);
         armor.accept(liv.getEquipment());
+        
+        boolean flag = false;
         if(this.hasAbilities())
         {
+            flag = true;
             liv.setMetadata(ABILITY_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(MobManager.class), ability));
         }
         
         if(this.hasDrops())
         {
+            flag = true;
             liv.setMetadata(DROP_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(MobManager.class), drop));
         }
         
-        customMobs.put(liv.getUniqueId(), this);
+        if(flag)
+        {
+            customMobs.put(liv.getUniqueId(), this);
+        }
         return liv;
     }
     
@@ -193,10 +200,12 @@ public class MobManager
                     LivingEntity damager = (LivingEntity)e.getDamager();
                     LivingEntity damaged = (LivingEntity)e.getEntity();
                     Optional.ofNullable(customMobs.get(e.getDamager().getUniqueId()))
+                            .filter(MobManager::hasAbilities)
                             .map(directManager -> directManager.ability.triggerDirectAbility(damager, damaged))
                             .orElseGet(() -> 
                             {
                                 return Optional.ofNullable(customMobs.get(e.getEntity().getUniqueId()))
+                                        .filter(MobManager::hasAbilities)
                                         .map(passiveManager -> passiveManager.ability
                                                 .triggerPassiveAbility(damaged, damager))  
                                         .orElse(true);

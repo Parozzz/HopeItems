@@ -7,7 +7,6 @@ package me.parozzz.hopeitems.items;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -26,6 +25,7 @@ import org.bukkit.block.Dispenser;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Snowball;
 import org.bukkit.entity.SpectralArrow;
 import org.bukkit.entity.ThrownPotion;
 import org.bukkit.entity.TippedArrow;
@@ -49,6 +49,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.material.DirectionalContainer;
@@ -65,6 +66,7 @@ public class ItemListener implements Listener
     private final BiFunction<ItemStack, ProjectileSource, Arrow> shootArrow;
     private final Function<Player, Stream<ItemStack>> arrowPriority;
     private final Function<Player, ItemStack> itemEntityInteract;
+    private final Function<Player, ItemStack> checkSnowball;
     public ItemListener()
     {
         arrowPriority = MCVersion.V1_8.isEqual() ?
@@ -111,6 +113,12 @@ public class ItemListener implements Listener
                             return null;
                     }
                 };
+        
+        checkSnowball = MCVersion.V1_8.isEqual() ?
+                p -> Optional.ofNullable(p.getItemInHand()).filter(i -> i.getType()==Material.SNOW_BALL).orElse(null) :
+                p ->  Optional.ofNullable(p.getInventory().getItemInMainHand())
+                            .filter(i -> i.getType()==Material.SNOW_BALL)
+                            .orElseGet(() -> Optional.ofNullable(p.getInventory().getItemInOffHand()).filter(i -> i.getType()==Material.SNOW_BALL).orElse(null));
     }
     
     @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
@@ -176,7 +184,7 @@ public class ItemListener implements Listener
         });
     }
     
-    private final static String ARROW_METADATA="HopeItems.CustomArrow";
+    private final static String PROJECTILE_METADATA="HopeItems.CustomPrjectile";
     
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
     private void onDispense(final BlockDispenseEvent e)
@@ -199,7 +207,7 @@ public class ItemListener implements Listener
             }
             else if(used.getType().name().contains("ARROW") && info.hasWhen(When.ARROW))
             {
-                shootArrow.apply(used, d.getBlockProjectileSource()).setMetadata(ARROW_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
+                shootArrow.apply(used, d.getBlockProjectileSource()).setMetadata(PROJECTILE_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
             }
             
             if(info.hasWhen(When.ARROW) || info.removeOnUse)
@@ -228,66 +236,70 @@ public class ItemListener implements Listener
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
     private void onProjectileLaunch(final ProjectileLaunchEvent e)
     {
-        if(e.getEntity() instanceof ThrownPotion && e.getEntity().getShooter() instanceof Player)
+        if(e.getEntity().getShooter() instanceof Player)
         {
             Player p = (Player)e.getEntity().getShooter();
-            
-            ItemStack item = ((ThrownPotion)e.getEntity()).getItem().clone();
-            item.setAmount(1);
-            
-            getOptional(item).ifPresent(info -> 
+            if(e.getEntity() instanceof ThrownPotion)
             {
-                if(info.hasWhen(When.SPLASH) || info.hasWhen(When.LINGERING))
+                ItemStack item = ((ThrownPotion)e.getEntity()).getItem().clone();
+                item.setAmount(1);
+
+                getOptional(item).ifPresent(info -> 
                 {
-                    if(!info.checkConditions(p.getLocation(), p) || info.hasCooldown(p))
+                    if(info.hasWhen(When.SPLASH) || info.hasWhen(When.LINGERING))
                     {
-                        e.setCancelled(true);
-                        if(p.getGameMode() != GameMode.CREATIVE)
+                        if(!info.checkConditions(p.getLocation(), p) || info.hasCooldown(p))
+                        {
+                            e.setCancelled(true);
+                            if(p.getGameMode() != GameMode.CREATIVE)
+                            {
+                                Task.scheduleSync(1L, () -> p.getInventory().addItem(item));
+                            }
+                        }
+                        else if(p.getGameMode() !=GameMode.CREATIVE && !info.removeOnUse)
                         {
                             Task.scheduleSync(1L, () -> p.getInventory().addItem(item));
                         }
                     }
-                    else if(p.getGameMode() !=GameMode.CREATIVE && !info.removeOnUse)
-                    {
-                        Task.scheduleSync(1L, () -> p.getInventory().addItem(item));
-                    }
-                }
-            });
-        }
-        else if(e.getEntity() instanceof Arrow && e.getEntity().getShooter() instanceof Player)
-        {
-            Player p = (Player)e.getEntity().getShooter();
-            
-            arrowPriority.apply(p)
-                    .filter(Objects::nonNull)
-                    .filter(item ->  e.getEntityType().name().contains(item.getType().name()))
-                    .findFirst().ifPresent(used -> 
-                    {
-                        getOptional(used, When.ARROW).ifPresent(info -> 
+                });
+            }
+            else if(e.getEntity() instanceof Snowball)
+            {
+                getOptional(checkSnowball.apply(p), When.SNOWBALL).ifPresent(info -> e.getEntity().setMetadata(PROJECTILE_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info)));
+            }
+            else if(e.getEntity() instanceof Arrow)
+            {
+                arrowPriority.apply(p)
+                        .filter(Objects::nonNull)
+                        .filter(item ->  e.getEntityType().name().contains(item.getType().name()))
+                        .findFirst().ifPresent(used -> 
                         {
-                            if(!info.checkConditions(p.getLocation(), p) || info.hasCooldown(p))
+                            getOptional(used, When.ARROW).ifPresent(info -> 
                             {
-                                e.setCancelled(true);
-                                return;
-                            }
+                                if(!info.checkConditions(p.getLocation(), p) || info.hasCooldown(p))
+                                {
+                                    e.setCancelled(true);
+                                    return;
+                                }
 
-                            e.getEntity().setMetadata(ARROW_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
-                            
-                            if(MCVersion.V1_8.isEqual() && !info.removeOnUse)
-                            {
-                                p.getInventory().addItem(used);
-                            }
+                                e.getEntity().setMetadata(PROJECTILE_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
+
+                                if(MCVersion.V1_8.isEqual() && !info.removeOnUse)
+                                {
+                                    p.getInventory().addItem(used);
+                                }
+                            });
                         });
-                    });
+            }
         }
     }
     
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
     private void onProjectileHit(final ProjectileHitEvent e)
     {
-        if(e.getEntity().hasMetadata(ARROW_METADATA))
+        if(e.getEntity().hasMetadata(PROJECTILE_METADATA))
         {
-            ItemInfo info = ((ItemInfo)e.getEntity().getMetadata(ARROW_METADATA).get(0).value());
+            ItemInfo info = ((ItemInfo)e.getEntity().getMetadata(PROJECTILE_METADATA).get(0).value());
             
             info.execute(e.getEntity().getLocation(), e.getEntity().getShooter() instanceof Player ? (Player)e.getEntity().getShooter() : null, false);
             if(info.removeOnUse)
@@ -476,12 +488,12 @@ public class ItemListener implements Listener
             @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
             private void onArrowPickup(final PlayerPickupArrowEvent e)
             {
-                if(e.getArrow().hasMetadata(ARROW_METADATA))
+                if(e.getArrow().hasMetadata(PROJECTILE_METADATA))
                 {
                     e.setCancelled(true);
                     e.getArrow().remove();
                     
-                    ItemInfo info = (ItemInfo)e.getArrow().getMetadata(ARROW_METADATA).get(0).value();
+                    ItemInfo info = (ItemInfo)e.getArrow().getMetadata(PROJECTILE_METADATA).get(0).value();
                     e.getPlayer().getInventory().addItem(info.getItem().parse(e.getPlayer(), e.getArrow().getLocation()));
                 }
             }
