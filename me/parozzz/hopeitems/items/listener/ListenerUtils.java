@@ -31,7 +31,7 @@ public class ListenerUtils
 {
     protected enum ProjectileType
     {
-        ARROW, SNOW_BALL, ENDER_PEARL, SPLASH_POTION, LINGERING_POTION;
+        ARROW, SNOW_BALL, ENDER_PEARL, SPLASH_POTION, LINGERING_POTION, NONE;
         
         public static ProjectileType getByMaterial(final Material m)
         {
@@ -54,7 +54,8 @@ public class ListenerUtils
                         return ProjectileType.ARROW;
                 }
             }
-            return null;
+            
+            return ProjectileType.NONE;
         }
         
         public static ProjectileType getByEntityType(final EntityType et)
@@ -67,6 +68,8 @@ public class ListenerUtils
                     return ProjectileType.SPLASH_POTION;
                 case SNOWBALL:
                     return ProjectileType.SNOW_BALL;
+                case ENDER_PEARL:
+                    return ProjectileType.ENDER_PEARL;
             }
             
             if(MCVersion.V1_9.isHigher())
@@ -81,7 +84,7 @@ public class ListenerUtils
                 }
             }
             
-            return null;
+            return ProjectileType.NONE;
         }
     }
     

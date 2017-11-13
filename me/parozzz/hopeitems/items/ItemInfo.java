@@ -23,8 +23,13 @@ import me.parozzz.hopeitems.items.managers.mobs.MobManager;
 import me.parozzz.hopeitems.utilities.Utils;
 import me.parozzz.hopeitems.utilities.placeholders.ItemPlaceholder;
 import org.bukkit.Location;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Dispenser;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.DirectionalContainer;
+import org.bukkit.projectiles.ProjectileSource;
+import org.bukkit.util.Vector;
 
 /**
  *
@@ -171,11 +176,22 @@ public class ItemInfo
         }
     }
     
+    public boolean execute(final Location l, final Dispenser d)
+    {
+        if(checkConditions(l, null))
+        {
+            spawnMobs(l, d.getBlockProjectileSource());
+            executeActions(l, null);
+            return true;
+        }
+        return false;
+    }
+    
     public boolean execute(final Location l, final Player p, final boolean conditions)
     {
         if(!conditions || (checkConditions(l, p) && !hasCooldown(p)))
         {
-            spawnMobs(l);
+            spawnMobs(l, p);
             executeActions(l, p);
             if(p != null)
             {
@@ -246,7 +262,7 @@ public class ItemInfo
         }
     }
     
-    public void spawnMobs(final Location l)
+    public void spawnMobs(final Location l, final ProjectileSource ps)
     {
         if(hasMob())
         {
@@ -255,7 +271,7 @@ public class ItemInfo
 
         if(hasExplosive())
         {
-            getExplosiveManager().spawn(l);
+            getExplosiveManager().spawn(l, ps);
         }
     }
 }

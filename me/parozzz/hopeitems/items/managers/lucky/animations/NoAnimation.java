@@ -27,7 +27,7 @@ public class NoAnimation implements Animation
             
             p.getInventory().addItem(info.getItem().parse(p, l));
             info.executeActions(l, p);
-            info.spawnMobs(l);
+            info.spawnMobs(l, p);
         });
     }
     

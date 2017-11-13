@@ -6,11 +6,9 @@
 package me.parozzz.hopeitems.items.managers.explosive;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import me.parozzz.hopeitems.items.managers.mobs.MobManager;
 import me.parozzz.hopeitems.utilities.Debug;
 import me.parozzz.hopeitems.utilities.classes.ComplexMapList;
 import me.parozzz.hopeitems.utilities.classes.SimpleMapList;
@@ -29,6 +27,7 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.projectiles.ProjectileSource;
 
 /**
  *
@@ -75,10 +74,17 @@ public class ExplosiveManager
                 .reduce(BiConsumer::andThen).orElse((e, set) -> {});
     }
     
-    public void spawn(final Location l)
+    public Entity spawn(final Location l, final ProjectileSource ps)
     {
-        Entity ent=l.getWorld().spawn(l, et.clazz);
+        Entity ent = et == ExplosiveType.FIREBALL && ps != null ? ps.launchProjectile(LargeFireball.class) : l.getWorld().spawn(l, et.clazz);
         
+        this.applyManager(ent);
+        
+        return ent;
+    }
+    
+    private void applyManager(final Entity ent)
+    {
         JavaPlugin plugin=JavaPlugin.getProvidingPlugin(ExplosiveManager.class);
         
         ExplosiveMetadata meta=new ExplosiveMetadata();
@@ -87,7 +93,6 @@ public class ExplosiveManager
         meta.modifier=modifier;
         ent.setMetadata(ExplosiveMetadata.METADATA, new FixedMetadataValue(plugin, meta));
     }
-    
     
     public static void registerListener()
     {

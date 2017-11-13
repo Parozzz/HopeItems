@@ -336,6 +336,32 @@ spawningSnowball:
           - damage_all: 2 
         chance: 25
       #off_hand:  #Only 1.9+
+fireball:
+  Item:
+    id: fireball
+    name: "&cFireball"
+  removeOnUse: true
+  when:
+    - drop
+  Explosive:
+    type: fireball
+    option:
+      - name: "&cFireball"
+      - power: 2
+      - fire: true
+      - blockdamage: false
+thorPotion:
+  Item:
+    id: splash_potion
+    type: speed
+    name: "&6Thor &fPotion"
+    lore:
+      - "&7Smite your enemies"
+  when:
+    - splash
+  Action:
+    worldEffect:
+      - thunder: true
 explodingDiamond:
   Item:
     id: diamond
@@ -378,7 +404,7 @@ scammyEnderpearl:
     player:
       - chat: "&dHey pss, &fi am in &7{world} &fat &7{x} {y} {z}!"
     worldEffect:
-      - particle: name:witch,effect:static,quantity:100
+      - particle: name:spell_witch,effect:static,quantity:100
 teleportArrow:
   when:
     - projectilehit

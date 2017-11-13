@@ -119,7 +119,8 @@ public class ItemListener implements Listener
             e.getAffectedEntities().stream()
                     .filter(LivingEntity.class::isInstance)
                     .forEach(ent -> info.execute(ent.getLocation(), ent instanceof Player ? (Player)ent : null, false));
-            info.spawnMobs(e.getEntity().getLocation());
+            
+            info.spawnMobs(e.getEntity().getLocation(), null);
         });
     }
     
@@ -142,7 +143,8 @@ public class ItemListener implements Listener
             e.setCancelled(true);
             if(info.hasWhen(When.DISPENSE))
             {      
-                info.execute(e.getBlock().getRelative(((DirectionalContainer)e.getBlock().getState().getData()).getFacing()).getLocation().add(0.5,0.5,0.5), null, true);
+                BlockFace face = ((DirectionalContainer)e.getBlock().getState().getData()).getFacing();
+                info.execute(e.getBlock().getRelative(face).getLocation().add(0.5, 0.5, 0.5), d);
             }
             else if(info.hasProjectileWhens())
             {
@@ -162,29 +164,38 @@ public class ItemListener implements Listener
             }
             
             boolean arrow = ListenerUtils.isArrow(used.getType());
-            if(!arrow && !info.removeOnUse)
+            if((MCVersion.V1_9.isHigher() && arrow) || !info.removeOnUse)
             {
                 return;
             }
-
-            if(used.getAmount() == 1 && Stream.of(d.getInventory().getContents()).allMatch(Objects::isNull))
+            
+            if(Stream.of(d.getInventory().getContents()).allMatch(Objects::isNull))
             {
                 Task.scheduleSync(1L, () -> d.getInventory().clear());
             }
+            else if(used.getAmount() == 1)
+            {
+                Task.scheduleSync(1L, () -> removeFromDispenser(d, used, info, arrow));
+            }
             else
             {
-                if(arrow && MCVersion.V1_9.isHigher())
-                {
-                    Utils.decreaseItemStack(used, d.getInventory());
-                    return;
-                }
-
-                if(info.removeOnUse)
-                {
-                    Utils.decreaseItemStack(used, d.getInventory());
-                }
+                removeFromDispenser(d, used, info, arrow);
             }
         });
+    }
+    
+    private void removeFromDispenser(final Dispenser d, final ItemStack item, final ItemInfo info, final boolean arrow)
+    {
+        if(arrow && MCVersion.V1_9.isHigher())
+        {
+            Utils.decreaseItemStack(item, d.getInventory());
+            return;
+        }
+
+        if(info.removeOnUse)
+        {
+            Utils.decreaseItemStack(item, d.getInventory());
+        }
     }
     
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
