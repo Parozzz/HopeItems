@@ -22,7 +22,6 @@ import me.parozzz.hopeitems.items.managers.lucky.LuckyManager;
 import me.parozzz.hopeitems.items.managers.mobs.MobManager;
 import me.parozzz.hopeitems.utilities.Utils;
 import me.parozzz.hopeitems.utilities.placeholders.ItemPlaceholder;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -35,7 +34,7 @@ public class ItemInfo
 {
     public enum When
     {
-        INTERACT, CONSUME, SPLASH, LINGERING, DISPENSE, ARROW, SNOWBALL, PROJECTILEDAMAGE,
+        INTERACT, CONSUME, SPLASH, LINGERING, DISPENSE, PROJECTILEHIT, PROJECTILEDAMAGE,
         ATTACKSELF, ATTACKOTHER,
         DROP, DROPONGROUND,
         BLOCKINTERACT, BLOCKSTEP, BLOCKDESTROY;
@@ -98,6 +97,11 @@ public class ItemInfo
     public boolean hasWhen(final When w)
     {
         return whens.contains(w);
+    }
+    
+    public boolean hasProjectileWhens()
+    {
+        return whens.contains(When.PROJECTILEDAMAGE) || whens.contains(When.PROJECTILEHIT);
     }
     
     private MobManager mobManager;

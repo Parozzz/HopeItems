@@ -33,7 +33,8 @@ exampleItem:
     - splash
     - lingering
     - dispense
-    - arrow
+    - projectilehit
+    - projectiledamage
     - attackself
     - attackother
     - drop
@@ -300,8 +301,9 @@ spawningSnowball:
     name: "&2Zombie &fSnowball"
     lore:
       - "&7Throw it to spawn a zombie!"
+  removeOnUse: true
   when:
-    - snowball
+    - projectilehit
   Mob:
     type: zombie
     option:
@@ -363,19 +365,31 @@ explodingDiamond:
     worldEffect:
       - thunder: false
       - explosion: power:5,fire:true,damage:false
+scammyEnderpearl:
+  Item:
+    id: ender_pearl
+    name: "&cScammy &dEnderPearl"
+    lore:
+      - "&7Is infinite, but does it worth it?"
+  removeOnUse: false
+  when:
+    - projectilehit
+  Action:
+    player:
+      - chat: "&dHey pss, &fi am in &7{world} &fat &7{x} {y} {z}!"
+    worldEffect:
+      - particle: name:witch,effect:static,quantity:100
 teleportArrow:
   when:
-    - arrow
+    - projectilehit
   Item:
     id: arrow
     name: "&cTeleport Arrow"
   removeOnUse: false
   Action:
-    player:
-      - chat: "&fYou all can find me in {world} at {x} {y} {z}!"
-    playerEffect:
-      #- sound: name:ENTITY_EXPERIENCE_ORB_PICKUP,volume:1,pitch:1
+    worldEffect:
       - particle: name:spell_mob,effect:static,quantity:100
+    playerEffect:
       - teleport: true
 mobEgg:
   Item:

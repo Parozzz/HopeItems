@@ -3,15 +3,17 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package me.parozzz.hopeitems.items;
+package me.parozzz.hopeitems.items.listener;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import me.parozzz.hopeitems.Configs;
+import me.parozzz.hopeitems.items.BlockManager;
+import me.parozzz.hopeitems.items.HItem;
+import me.parozzz.hopeitems.items.ItemInfo;
 import me.parozzz.hopeitems.items.ItemInfo.When;
+import me.parozzz.hopeitems.items.listener.ListenerUtils.ProjectileType;
 import me.parozzz.hopeitems.utilities.MCVersion;
 import me.parozzz.hopeitems.utilities.Utils;
 import me.parozzz.hopeitems.utilities.classes.Task;
@@ -24,13 +26,11 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Dispenser;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.FishHook;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Snowball;
-import org.bukkit.entity.SpectralArrow;
 import org.bukkit.entity.ThrownPotion;
-import org.bukkit.entity.TippedArrow;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -51,13 +51,10 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.material.DirectionalContainer;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.projectiles.ProjectileSource;
 
 /**
  *
@@ -65,57 +62,6 @@ import org.bukkit.projectiles.ProjectileSource;
  */
 public class ItemListener implements Listener
 {
-    private final BiFunction<ItemStack, ProjectileSource, Arrow> shootArrow;
-    private final Function<Player, Stream<ItemStack>> arrowPriority;
-    private final Function<Player, ItemStack> itemEntityInteract;
-    private final Function<Player, ItemStack> checkSnowball;
-    public ItemListener()
-    {
-        arrowPriority = MCVersion.V1_8.isEqual() ?
-                p -> Stream.of(p.getInventory().getContents()) :
-                p -> Stream.concat(Stream.of(p.getInventory().getItemInOffHand()), Stream.of(p.getInventory().getContents()));
-        
-        itemEntityInteract = MCVersion.V1_8.isEqual() ?
-                p -> p.getItemInHand() :
-                p -> Optional.ofNullable(p.getInventory().getItemInMainHand())
-                        .filter(i -> i.getType()!=Material.AIR)
-                        .orElseGet(() -> Optional.ofNullable(p.getInventory().getItemInOffHand())
-                                .filter(i -> i.getType()!=Material.AIR)
-                                .orElse(null));
-        
-        shootArrow = MCVersion.V1_8.isEqual() ?
-                (item, source) -> source.launchProjectile(Arrow.class) :
-                (item, source) -> 
-                {
-                    switch(item.getType())
-                    {
-                        case ARROW:
-                            return source.launchProjectile(Arrow.class);
-                        case TIPPED_ARROW:
-                            Arrow tipped = source.launchProjectile(TippedArrow.class);
-
-                            PotionMeta meta=(PotionMeta)item.getItemMeta();
-                            meta.getCustomEffects().forEach(pe -> ((TippedArrow)tipped).addCustomEffect(pe, true));
-                            if(MCVersion.V1_11.isHigher() && meta.hasColor()) 
-                            { 
-                                ((TippedArrow)tipped).setColor(meta.getColor()); 
-                            }
-
-                            return tipped;
-                        case SPECTRAL_ARROW:
-                            return source.launchProjectile(SpectralArrow.class);
-                        default:
-                            return null;
-                    }
-                };
-        
-        checkSnowball = MCVersion.V1_8.isEqual() ?
-                p -> Optional.ofNullable(p.getItemInHand()).filter(i -> i.getType()==Material.SNOW_BALL).orElse(null) :
-                p ->  Optional.ofNullable(p.getInventory().getItemInMainHand())
-                            .filter(i -> i.getType()==Material.SNOW_BALL)
-                            .orElseGet(() -> Optional.ofNullable(p.getInventory().getItemInOffHand()).filter(i -> i.getType()==Material.SNOW_BALL).orElse(null));
-    }
-    
     @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
     private void onItemInteract(final PlayerInteractEvent e)
     {
@@ -152,7 +98,7 @@ public class ItemListener implements Listener
     @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
     private void onEntityInteract(final PlayerInteractAtEntityEvent e)
     {
-        getOptional(itemEntityInteract.apply(e.getPlayer())).ifPresent(info -> e.setCancelled(true));
+        getOptional(ListenerUtils.getUsedItem(e.getPlayer())).ifPresent(info -> e.setCancelled(true));
     }
     
     @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
@@ -161,7 +107,6 @@ public class ItemListener implements Listener
         getOptional(e.getItem(), When.CONSUME).ifPresent(info -> 
         {
             e.setCancelled(true);
-            
             info.executeWithItem(e.getPlayer().getLocation(), e.getPlayer(), e.getItem());
         });
     }
@@ -172,9 +117,8 @@ public class ItemListener implements Listener
         getOptional(e.getEntity().getItem(), When.SPLASH).ifPresent(info -> 
         {
             e.getAffectedEntities().stream()
-                    .filter(Player.class::isInstance)
-                    .map(Player.class::cast)
-                    .forEach(p -> info.execute(p.getLocation(), p, false));
+                    .filter(LivingEntity.class::isInstance)
+                    .forEach(ent -> info.execute(ent.getLocation(), ent instanceof Player ? (Player)ent : null, false));
             info.spawnMobs(e.getEntity().getLocation());
         });
     }
@@ -200,29 +144,44 @@ public class ItemListener implements Listener
             {      
                 info.execute(e.getBlock().getRelative(((DirectionalContainer)e.getBlock().getState().getData()).getFacing()).getLocation().add(0.5,0.5,0.5), null, true);
             }
-            else if(used.getType().name().contains("ARROW") && info.hasWhen(When.ARROW))
+            else if(info.hasProjectileWhens())
             {
-                shootArrow.apply(used, d.getBlockProjectileSource()).setMetadata(PROJECTILE_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
+                Projectile proj;
+                switch(ProjectileType.getByMaterial(used.getType()))
+                {
+                    case ARROW:
+                        proj = ListenerUtils.shootArrow(used, d.getBlockProjectileSource());
+                        break;
+                    case SNOW_BALL:
+                        proj = d.getBlockProjectileSource().launchProjectile(Snowball.class);
+                        break;
+                    default:
+                        return;
+                }
+                proj.setMetadata(PROJECTILE_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
             }
             
-            if(info.hasWhen(When.ARROW) || info.removeOnUse)
+            boolean arrow = ListenerUtils.isArrow(used.getType());
+            if(!arrow && !info.removeOnUse)
             {
-                if(used.getAmount() == 1 && Stream.of(d.getInventory().getContents()).allMatch(Objects::isNull))
+                return;
+            }
+
+            if(used.getAmount() == 1 && Stream.of(d.getInventory().getContents()).allMatch(Objects::isNull))
+            {
+                Task.scheduleSync(1L, () -> d.getInventory().clear());
+            }
+            else
+            {
+                if(arrow && MCVersion.V1_9.isHigher())
                 {
-                    Task.scheduleSync(1L, () -> d.getInventory().clear());
+                    Utils.decreaseItemStack(used, d.getInventory());
+                    return;
                 }
-                else
+
+                if(info.removeOnUse)
                 {
-                    if(info.hasWhen(When.ARROW) && MCVersion.V1_9.isHigher())
-                    {
-                        Utils.decreaseItemStack(used, d.getInventory());
-                        return;
-                    }
-                    
-                    if(info.removeOnUse)
-                    {
-                        Utils.decreaseItemStack(used, d.getInventory());
-                    }
+                    Utils.decreaseItemStack(used, d.getInventory());
                 }
             }
         });
@@ -234,73 +193,84 @@ public class ItemListener implements Listener
         if(e.getEntity().getShooter() instanceof Player)
         {
             Player p = (Player)e.getEntity().getShooter();
-            if(e.getEntity() instanceof ThrownPotion)
+            switch(ProjectileType.getByEntityType(e.getEntityType()))
             {
-                ItemStack item = ((ThrownPotion)e.getEntity()).getItem().clone();
-                item.setAmount(1);
-
-                getOptional(item).ifPresent(info -> 
-                {
-                    if(info.hasWhen(When.SPLASH) || info.hasWhen(When.LINGERING))
+                case SPLASH_POTION:
+                    e.setCancelled(this.onPotionSpawn((ThrownPotion)e.getEntity(), When.SPLASH, p));
+                    break;
+                case LINGERING_POTION:
+                    e.setCancelled(this.onPotionSpawn((ThrownPotion)e.getEntity(), When.LINGERING, p));
+                    break;
+                case ENDER_PEARL:
+                case SNOW_BALL:
+                    Optional.ofNullable(ListenerUtils.checkHands(p, Material.valueOf(e.getEntityType().name()))).ifPresent(item -> 
                     {
-                        if(!info.checkConditions(p.getLocation(), p) || info.hasCooldown(p))
+                        getOptional(item, When.PROJECTILEDAMAGE, When.PROJECTILEHIT).ifPresent(info -> 
                         {
-                            e.setCancelled(true);
-                            if(p.getGameMode() != GameMode.CREATIVE)
+                            e.getEntity().setMetadata(PROJECTILE_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
+
+                            if(p.getGameMode()!=GameMode.CREATIVE && !info.removeOnUse)
                             {
-                                Task.scheduleSync(1L, () -> 
-                                {
-                                    p.getInventory().addItem(item);
-                                    p.updateInventory();
-                                });
+                                ItemStack toGive = item.clone();
+                                toGive.setAmount(1);
+                                ListenerUtils.giveDelayedItem(p, toGive);
                             }
-                        }
-                        else if(p.getGameMode() !=GameMode.CREATIVE && !info.removeOnUse)
-                        {
-                            Task.scheduleSync(1L, () -> 
+                        });
+                    });
+                    break;
+                case ARROW:
+                    ListenerUtils.arrowPriority(p)
+                            .filter(Objects::nonNull)
+                            .filter(item ->  e.getEntityType().name().contains(item.getType().name()))
+                            .findFirst().ifPresent(used -> 
                             {
-                                p.getInventory().addItem(item);
-                                p.updateInventory();
-                            });
-                        }
-                    }
-                });
-            }
-            else if(e.getEntity() instanceof Snowball)
-            {
-                getOptional(checkSnowball.apply(p), When.SNOWBALL).ifPresent(info -> e.getEntity().setMetadata(PROJECTILE_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info)));
-            }
-            else if(e.getEntity() instanceof Arrow)
-            {
-                arrowPriority.apply(p)
-                        .filter(Objects::nonNull)
-                        .filter(item ->  e.getEntityType().name().contains(item.getType().name()))
-                        .findFirst().ifPresent(used -> 
-                        {
-                            getOptional(used, When.ARROW).ifPresent(info -> 
-                            {
-                                if(!info.checkConditions(p.getLocation(), p) || info.hasCooldown(p))
+                                getOptional(used, When.PROJECTILEDAMAGE, When.PROJECTILEHIT).ifPresent(info -> 
                                 {
-                                    e.setCancelled(true);
-                                    return;
-                                }
+                                    if(!info.checkConditions(p.getLocation(), p) || info.hasCooldown(p))
+                                    {
+                                        e.setCancelled(true);
+                                        return;
+                                    }
 
-                                e.getEntity().setMetadata(PROJECTILE_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
+                                    e.getEntity().setMetadata(PROJECTILE_METADATA, new FixedMetadataValue(JavaPlugin.getProvidingPlugin(ItemListener.class), info));
 
-                                if(p.getGameMode()!=GameMode.CREATIVE && MCVersion.V1_8.isEqual() && !info.removeOnUse)
-                                {
-                                    Task.scheduleSync(1L, () -> 
+                                    if(p.getGameMode()!=GameMode.CREATIVE && MCVersion.V1_8.isEqual() && !info.removeOnUse)
                                     {
                                         ItemStack giveBack = used.clone();
                                         giveBack.setAmount(1);
-                                        p.getInventory().addItem(giveBack);
-                                        p.updateInventory();
-                                    });
-                                }
+                                        ListenerUtils.giveDelayedItem(p, used);
+                                    }
+                                });
                             });
-                        });
+                    break;
             }
         }
+    }
+    
+    private boolean onPotionSpawn(final ThrownPotion tp, final When w, final Player p)
+    {
+        ItemStack thrown = tp.getItem().clone();
+        return getOptional(thrown).map(info -> 
+        {
+            if(info.hasWhen(w))
+            {
+                if(!info.checkConditions(p.getLocation(), p) || info.hasCooldown(p))
+                {
+                    if(p.getGameMode() != GameMode.CREATIVE)
+                    {
+                        thrown.setAmount(1);
+                        ListenerUtils.giveDelayedItem(p, thrown);
+                    }
+                    return true;
+                }
+                else if(p.getGameMode() !=GameMode.CREATIVE && !info.removeOnUse)
+                {
+                    thrown.setAmount(1);
+                    ListenerUtils.giveDelayedItem(p, thrown);
+                }
+            }
+            return false;
+        }).orElse(false);
     }
     
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
@@ -314,7 +284,7 @@ public class ItemListener implements Listener
             {
                 Task.scheduleSync(1L, () -> 
                 {
-                    if(e.getEntity().hasMetadata(PROJECTILE_METADATA))
+                    if(info.hasWhen(When.PROJECTILEHIT) && e.getEntity().hasMetadata(PROJECTILE_METADATA))
                     {
                         executeOnProjectileHit(e.getEntity(), info);
                     }
@@ -329,20 +299,15 @@ public class ItemListener implements Listener
     
     private void executeOnProjectileHit(final Projectile pj, final ItemInfo info)
     {
-        if(pj instanceof Arrow && info.hasWhen(When.ARROW))
+        if(pj instanceof Arrow)
         {
-            info.execute(pj.getLocation(), (Player)pj.getShooter(), false);
-
             if(MCVersion.V1_8.isEqual() || info.removeOnUse)
             {
                 pj.remove();
             }
         }
-        else if(pj instanceof Snowball && info.hasWhen(When.SNOWBALL))
-        {
-            info.execute(pj.getLocation(), (Player)pj.getShooter(), false);
-        }
         
+        info.execute(pj.getLocation(), pj.getShooter() instanceof Player ? (Player)pj.getShooter() : null, false);
         pj.removeMetadata(PROJECTILE_METADATA, JavaPlugin.getProvidingPlugin(ItemListener.class));
     }
     
@@ -567,12 +532,13 @@ public class ItemListener implements Listener
     
     private static Optional<ItemInfo> getOptional(final ItemStack item, final When... w)
     {
-        return Optional.ofNullable(item)
+        Optional<ItemInfo> op = Optional.ofNullable(item)
                 .filter(Objects::nonNull)
                 .map(HItem::new)
                 .filter(HItem::isValid)
                 .map(HItem::getStringId)
                 .flatMap(id -> Optional.ofNullable(Configs.getItemInfo(id)))
                 .filter(info -> w.length==0 || Stream.of(w).anyMatch(info::hasWhen));
+        return op;
     }
 }

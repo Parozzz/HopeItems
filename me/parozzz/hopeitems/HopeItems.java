@@ -12,7 +12,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import me.parozzz.hopeitems.items.BlockManager;
-import me.parozzz.hopeitems.items.ItemListener;
+import me.parozzz.hopeitems.items.listener.ItemListener;
 import me.parozzz.hopeitems.items.managers.explosive.ExplosiveManager;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyManager;
 import me.parozzz.hopeitems.items.managers.mobs.MobManager;
