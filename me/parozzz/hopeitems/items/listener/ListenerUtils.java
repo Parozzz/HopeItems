@@ -6,13 +6,10 @@
 package me.parozzz.hopeitems.items.listener;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
-import me.parozzz.hopeitems.utilities.MCVersion;
-import me.parozzz.hopeitems.utilities.Utils;
-import me.parozzz.hopeitems.utilities.classes.Task;
+import me.parozzz.reflex.MCVersion;
+import me.parozzz.reflex.utilities.TaskUtil;
+import me.parozzz.reflex.utilities.Util;
 import org.bukkit.Material;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EntityType;
@@ -97,7 +94,7 @@ public class ListenerUtils
     
     protected static boolean isArrow(final Material m)
     {
-        return MCVersion.V1_8.isEqual() ? m == Material.ARROW : Utils.or(m, Material.ARROW, Material.TIPPED_ARROW, Material.SPECTRAL_ARROW);
+        return MCVersion.V1_8.isEqual() ? m == Material.ARROW : Util.or(m, Material.ARROW, Material.TIPPED_ARROW, Material.SPECTRAL_ARROW);
     }
     
     protected static ItemStack checkHands(final Player p, final Material m)
@@ -156,7 +153,7 @@ public class ListenerUtils
     
     protected static void giveDelayedItem(final Player p, final ItemStack item)
     {
-        Task.scheduleSync(1L, () -> 
+        TaskUtil.scheduleSync(1L, () -> 
         {
             p.getInventory().addItem(item);
             p.updateInventory();

@@ -14,8 +14,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import me.parozzz.hopeitems.items.ItemInfo;
+import me.parozzz.hopeitems.items.ItemInfo.When;
+import me.parozzz.hopeitems.items.ItemRegistry;
 import me.parozzz.hopeitems.shop.Shop;
-import me.parozzz.hopeitems.utilities.Utils;
+import me.parozzz.reflex.utilities.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -147,7 +150,7 @@ public class ItemsCommand implements CommandExecutor
                     });
                     break;
                 case LIST:
-                    cs.sendMessage(ChatColor.WHITE+Configs.getItemNames().stream().collect(Collectors.joining(", ")));
+                    cs.sendMessage(ChatColor.WHITE + ItemRegistry.getIds().stream().collect(Collectors.joining(", ")));
                     break;
                 case GETITEM:
                     if(val.length<2)
@@ -156,7 +159,7 @@ public class ItemsCommand implements CommandExecutor
                         return true;
                     }
                     
-                    this.giveItemStack(cs, (Player)cs, val[1], val.length==3 && Utils.isNumber(val[2])? Integer.valueOf(val[2]): 1);
+                    this.giveItemStack(cs, (Player)cs, val[1], val.length==3 && Util.isNumber(val[2])? Integer.valueOf(val[2]): 1);
                     break;
                 case GIVEITEM:
                     if(val.length<3)
@@ -167,13 +170,14 @@ public class ItemsCommand implements CommandExecutor
                     
                     Optional.ofNullable(Bukkit.getPlayer(val[1])).map(p -> 
                     {
-                        this.giveItemStack(cs, p, val[2], val.length==4 && Utils.isNumber(val[3])? Integer.valueOf(val[3]): 1);
+                        this.giveItemStack(cs, p, val[2], val.length==4 && Util.isNumber(val[3])? Integer.valueOf(val[3]): 1);
                         return p;
                     }).orElseGet(() -> 
                     {
                         cs.sendMessage(CommandMessageEnum.PLAYER_OFFLINE.toString());
                         return null;
                     });
+                    break;
                 case EXECUTE:
                     if(val.length < 3)
                     {
@@ -183,7 +187,9 @@ public class ItemsCommand implements CommandExecutor
                     
                     Optional.ofNullable(Bukkit.getPlayer(val[1])).map(p -> 
                     {
-                        Optional.ofNullable(Configs.getItemInfo(val[2]))
+                        Optional.ofNullable(ItemRegistry.getCollection(val[2]))
+                                .map(collection -> collection.getItemInfo(When.NONE))
+                                .filter(Objects::nonNull)
                                 .map(info -> info.execute(p.getLocation(), p, val.length == 4 ? val[3].equalsIgnoreCase("-c") : false))
                                 .orElseGet(() -> 
                                 {
@@ -204,9 +210,9 @@ public class ItemsCommand implements CommandExecutor
     
     private void giveItemStack(final CommandSender cs, final Player p, final String name, final int amount)
     {
-        Optional.ofNullable(Configs.getItemInfo(name)).map(info -> 
+        Optional.ofNullable(ItemRegistry.getCollection(name)).map(collection -> 
         {
-            ItemStack item=info.getItem().parse(p, p.getLocation());
+            ItemStack item = collection.getItem().parse(p, p.getLocation());
             item.setAmount(amount);
             
             p.getInventory().addItem(item);
@@ -218,7 +224,7 @@ public class ItemsCommand implements CommandExecutor
             if(!p.equals(cs))
             {
                 cs.sendMessage(CommandMessageEnum.ITEM_SENT.toString()
-                        .replace("%name%", info.getName())
+                        .replace("%name%", collection.getId())
                         .replace("%amount%", Objects.toString(item.getAmount()))
                         .replace("%player%", p.getName()));
             }

@@ -11,15 +11,19 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 import me.parozzz.hopeitems.items.BlockManager;
 import me.parozzz.hopeitems.items.listener.ItemListener;
 import me.parozzz.hopeitems.items.managers.explosive.ExplosiveManager;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyManager;
 import me.parozzz.hopeitems.items.managers.mobs.MobManager;
 import me.parozzz.hopeitems.shop.Shop;
-import me.parozzz.hopeitems.utilities.MCVersion;
-import me.parozzz.hopeitems.utilities.Utils;
+import me.parozzz.reflex.MCVersion;
+import me.parozzz.reflex.ReflexAPI;
+import me.parozzz.reflex.ReflexAPI.Property;
+import me.parozzz.reflex.utilities.Util;
 import org.bukkit.Bukkit;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
@@ -39,13 +43,18 @@ public class HopeItems extends JavaPlugin
         {
             setupDependency();
             
-            FileConfiguration config = Utils.fileStartup(new File(this.getDataFolder(), "config.yml"));
+            File configFile = new File(this.getDataFolder(), "config.yml");
+            FileConfiguration config = Util.fileStartup(configFile);
+            
+            this.saveDefaultItems(configFile, config);
+            
             if(config.getBoolean("metric", true))
             {
                 new MetricsLite(this);
             }
+            
             Configs.initConfig(config);
-            Configs.initItems(Utils.fileStartup(new File(this.getDataFolder(), "items.yml")), false);
+            loadItems(false);
             
             MobManager.registerListener();
             ExplosiveManager.registerListener();
@@ -62,22 +71,12 @@ public class HopeItems extends JavaPlugin
                 Shop.registerListener();
             }
             
-            if(MCVersion.V1_8.isEqual()) 
-            {
-                Utils.registerArmorStandInvicibleListener();
-            }
-            else if(MCVersion.V1_11.isHigher())
-            {
-                Utils.registerFireworkDamageListener();
-            }
+            Util.ifCheck(MCVersion.V1_8.isEqual(), () -> Util.registerArmorStandInvicibleListener());
             
             Bukkit.getPluginManager().registerEvents(new ItemListener(), this);
-            if(MCVersion.V1_9.isHigher())
-            {
-                ItemListener.register1_9Listener();
-            }
+            Util.ifCheck(MCVersion.V1_9.isHigher(), () -> ItemListener.register1_9Listener());
             
-            this.getCommand("items").setExecutor(new ItemsCommand());
+            getCommand("items").setExecutor(new ItemsCommand());
         }
         catch(final IOException t)
         {
@@ -100,12 +99,37 @@ public class HopeItems extends JavaPlugin
             Logger.getLogger(HopeItems.class.getName()).log(Level.SEVERE, "[HopeItems] Something went wrong during data saving", ex);
         }
         
-        Configs.initConfig(Utils.fileStartup(new File(this.getDataFolder(), "config.yml")));
-        Configs.initItems(Utils.fileStartup(new File(this.getDataFolder(), "items.yml")), true);
+        Configs.initConfig(Util.fileStartup(new File(this.getDataFolder(), "config.yml")));
+        this.loadItems(true);
         
         Shop.getInstance().loadConfig();
         BlockManager.getInstance().loadBlocks(data);
         MobManager.loadData(data);
+    }
+    
+    public void loadItems(final boolean reload)
+    {
+        Configs.loadItems(new File(this.getDataFolder(), "items").listFiles(), reload);
+    }
+    
+    public void saveDefaultItems(final File configFile, final FileConfiguration config)
+    {
+        new File(this.getDataFolder(), "items").mkdir();
+        if(config.getBoolean("savedDefault", false))
+        {
+            return; 
+        }
+        
+        Stream.of("ExampleItem", "ExplodingDiamond", "GiftHead", "ScammyEnderpearl", "SpawnSnowball", "TeleportArrow", "ThorPot")
+                .forEach(defaultName -> this.saveResource("items/" + defaultName + ".yml", true));
+        
+                
+        config.set("savedDefault", true);
+        try {
+            config.save(configFile);
+        } catch (IOException ex) {
+            Logger.getLogger(HopeItems.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     @Override
@@ -130,6 +154,8 @@ public class HopeItems extends JavaPlugin
     {
         Logger l=Logger.getLogger(HopeItems.class.getSimpleName());
         
+        ReflexAPI.enable(Property.ENTITYPLAYER_LISTENER, Property.ARMOREVENTS_LISTENER);
+        
         if(Dependency.setupEconomy())
         {
             l.log(Level.INFO, "[HopeItems] Vault SoftDependency found");
@@ -139,6 +165,6 @@ public class HopeItems extends JavaPlugin
         {
             l.log(Level.INFO, "[HopeItems] WorldGuard SoftDependency found");
         }
-
+        
     }
 }

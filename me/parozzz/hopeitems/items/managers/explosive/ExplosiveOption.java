@@ -6,7 +6,8 @@
 package me.parozzz.hopeitems.items.managers.explosive;
 
 import java.util.function.BiConsumer;
-import me.parozzz.hopeitems.utilities.Utils;
+import me.parozzz.reflex.utilities.EntityUtil;
+import me.parozzz.reflex.utilities.Util;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -30,7 +31,7 @@ public enum ExplosiveOption
             {
                 if(ent instanceof LivingEntity)
                 {
-                    Utils.setMaxHealth((LivingEntity)ent, health);
+                    EntityUtil.setMaxHealth((LivingEntity)ent, health);
                 }
             };
         }
@@ -67,7 +68,7 @@ public enum ExplosiveOption
         @Override
         public BiConsumer<Entity, ExplosiveMetadata> getConsumer(final String value)
         {
-            String name=Utils.color(value);
+            String name = Util.cc(value);
             
             return (ent, meta) -> 
             {

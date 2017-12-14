@@ -7,6 +7,8 @@ package me.parozzz.hopeitems.items.managers.lucky.animations;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import me.parozzz.hopeitems.items.ItemInfo;
+import me.parozzz.hopeitems.items.ItemInfo.When;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyReward;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -21,13 +23,18 @@ public class NoAnimation implements Animation
     @Override
     public void roll(List<LuckyReward> rewards, Player p) 
     {
-        rewards.get(ThreadLocalRandom.current().nextInt(rewards.size())).getItems().forEach(info -> 
+        rewards.get(ThreadLocalRandom.current().nextInt(rewards.size())).getItems().forEach(collection -> 
         {
             Location l = p.getLocation();
             
-            p.getInventory().addItem(info.getItem().parse(p, l));
-            info.executeActions(l, p);
-            info.spawnMobs(l, p);
+            p.getInventory().addItem(collection.getItem().parse(p, l));
+            
+            if(collection.hasWhen(When.NONE))
+            {
+                ItemInfo info = collection.getItemInfo(When.NONE);
+                info.executeActions(l, p);
+                info.spawnMobs(l, p);
+            }
         });
     }
     

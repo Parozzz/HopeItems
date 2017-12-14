@@ -5,31 +5,24 @@
  */
 package me.parozzz.hopeitems.items;
 
-import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import me.parozzz.hopeitems.items.managers.conditions.ConditionManager;
-import me.parozzz.hopeitems.items.managers.conditions.ConditionType;
 import me.parozzz.hopeitems.items.managers.actions.ActionManager;
-import me.parozzz.hopeitems.items.managers.actions.ActionType;
 import me.parozzz.hopeitems.items.managers.actions.DoubleActionManager;
 import me.parozzz.hopeitems.items.managers.actions.SingleActionManager;
 import me.parozzz.hopeitems.items.managers.cooldown.CooldownManager;
 import me.parozzz.hopeitems.items.managers.explosive.ExplosiveManager;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyManager;
 import me.parozzz.hopeitems.items.managers.mobs.MobManager;
-import me.parozzz.hopeitems.utilities.Utils;
-import me.parozzz.hopeitems.utilities.placeholders.ItemPlaceholder;
+import me.parozzz.reflex.utilities.ItemUtil;
 import org.bukkit.Location;
-import org.bukkit.block.BlockFace;
 import org.bukkit.block.Dispenser;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.material.DirectionalContainer;
 import org.bukkit.projectiles.ProjectileSource;
-import org.bukkit.util.Vector;
 
 /**
  *
@@ -39,74 +32,49 @@ public class ItemInfo
 {
     public enum When
     {
-        INTERACT, CONSUME, SPLASH, LINGERING, DISPENSE, PROJECTILEHIT, PROJECTILEDAMAGE,
+        INTERACT, CONSUME, SPLASH, LINGERING, DISPENSE, PROJECTILE,
+        ARMOREQUIP, ARMORUNEQUIP,
         ATTACKSELF, ATTACKOTHER,
         DROP, DROPONGROUND,
-        BLOCKINTERACT, BLOCKSTEP, BLOCKDESTROY;
+        BLOCKINTERACT, BLOCKSTEP, BLOCKDESTROY, 
+        NONE;
     }
     
     public boolean removeOnUse=false;
     
-    private final String name;
-    private final ItemPlaceholder item;
+    private final ItemCollection collection;
     
     private final Set<When> whens;
-    private final Map<ConditionType, ConditionManager> conditions;
-    private final Map<ActionType, ActionManager> actions;
-    public ItemInfo(final String name, final ItemStack item)
+    private final Set<ConditionManager> conditions;
+    private final Set<ActionManager> actions;
+    
+    public ItemInfo(final ItemCollection collection, final Set<When> whens)
     {
-        this.name=name;
-        this.item=new ItemPlaceholder(item);
+        this.collection = collection;
         
-        whens=EnumSet.noneOf(When.class);
-        conditions=new EnumMap(ConditionType.class);
-        actions=new EnumMap(ActionType.class);
+        this.whens = EnumSet.copyOf(whens);
+        conditions = new HashSet<>();
+        actions = new HashSet<>();
     }
     
-    public String getName()
+    public Set<When> getWhens()
     {
-        return name;
+        return whens;
     }
     
-    private CooldownManager cooldown;
-    public void setCooldown(final CooldownManager cooldown)
+    public ItemCollection getCollection()
     {
-        this.cooldown = cooldown;
-    }
-    
-    public boolean hasCooldown(final Player p)
-    {
-        return Optional.ofNullable(cooldown).map(cool -> cool.hasCooldown(p)).orElse(false);
-    }
-    
-    public ItemPlaceholder getItem()
-    {
-        return item;
+        return collection;
     }
     
     public void addConditionManager(final ConditionManager cm)
     {
-        conditions.put(cm.getType(), cm);
+        conditions.add(cm);
     }
     
     public void addActionManager(final ActionManager am)
     {
-        actions.put(am.getType(), am);
-    }
-    
-    public void addWhen(final When w)
-    {
-        whens.add(w);
-    }
-    
-    public boolean hasWhen(final When w)
-    {
-        return whens.contains(w);
-    }
-    
-    public boolean hasProjectileWhens()
-    {
-        return whens.contains(When.PROJECTILEDAMAGE) || whens.contains(When.PROJECTILEHIT);
+        actions.add(am);
     }
     
     private MobManager mobManager;
@@ -131,47 +99,17 @@ public class ItemInfo
         explosiveManager=em;
     }
     
-    public boolean hasExplosive()
-    {
-        return explosiveManager!=null;
-    }
-    
-    public ExplosiveManager getExplosiveManager()
-    {
-        return explosiveManager;
-    }
-    
     private LuckyManager luckyManager;
     public void setLuckyManager(final LuckyManager lm)
     {
         luckyManager=lm;
     }
     
-    public boolean hasLucky()
-    {
-        return luckyManager!=null;
-    }
-    
-    public LuckyManager getLuckyManager()
-    {
-        return luckyManager;
-    }
-    
-    public Map<ConditionType, ConditionManager> getConditionMap()
-    {
-        return conditions;
-    }
-    
-    public Map<ActionType, ActionManager> getActionMap()
-    {
-        return actions;
-    }
-    
     public void executeWithItem(final Location l, final Player p, final ItemStack item)
     {
         if(execute(l, p, true) && removeOnUse)
         {
-            Utils.decreaseItemStack(item, p.getInventory());
+            ItemUtil.decreaseItemStack(item, p.getInventory());
             p.updateInventory();
         }
     }
@@ -186,10 +124,11 @@ public class ItemInfo
         }
         return false;
     }
+
     
     public boolean execute(final Location l, final Player p, final boolean conditions)
     {
-        if(!conditions || (checkConditions(l, p) && !hasCooldown(p)))
+        if(!conditions || (checkConditions(l, p) && !collection.hasCooldown(p)))
         {
             spawnMobs(l, p);
             executeActions(l, p);
@@ -205,20 +144,19 @@ public class ItemInfo
     
     public boolean checkConditions(final Location l, final Player p)
     {
-        return this.getConditionMap().entrySet().stream().allMatch(e -> 
+        return conditions.stream().allMatch(condition -> 
         {
-            if(e.getKey().isPlayerRelated() && p==null)
+            if(condition.getType().isPlayerRelated() && p==null)
             {
                 return true;
             }
             
-            switch(e.getKey())
+            switch(condition.getType())
             {
                 case PLAYER:
-                    ConditionManager<Player> player=(ConditionManager<Player>)e.getValue();
-                    return player.testCondition(p, p);
+                    return ((ConditionManager<Player>)condition).testCondition(p, p);
                 case LOCATION:
-                    ConditionManager<Location> location=(ConditionManager<Location>)e.getValue();
+                    ConditionManager<Location> location = (ConditionManager<Location>)condition;
                     return Optional.ofNullable(p).map(temp -> location.testCondition(l, temp)).orElseGet(() -> location.testCondition(l));
                 default:
                     return false;
@@ -228,26 +166,23 @@ public class ItemInfo
     
     public void executeActions(final Location l, final Player p)
     {
-        this.getActionMap().forEach((at , am) -> 
+        actions.forEach(action -> 
         {
-            if(at.isPlayerRelated() && p==null)
+            if(action.getType().isPlayerRelated() && p == null)
             {
                 return;
             }
             
-            switch(at)
+            switch(action.getType())
             {
                 case PLAYER:
-                    SingleActionManager<Player> player=(SingleActionManager<Player>)am;
-                    player.executeAction(p);
+                    ((SingleActionManager<Player>)action).executeAction(p);
                     break;
                 case PLAYEREFFECT:
-                    DoubleActionManager<Player, Location> playerEffect=(DoubleActionManager<Player, Location>)am;
-                    playerEffect.executeAction(p, l);
+                    ((DoubleActionManager<Player, Location>)action).executeAction(p, l);
                     break;
                 case WORLDEFFECT:
-                    SingleActionManager<Location> world=(SingleActionManager<Location>)am;
-                    world.executeAction(l);
+                    ((SingleActionManager<Location>)action).executeAction(l);
                     break;
             }
         });
@@ -256,22 +191,12 @@ public class ItemInfo
     
     public void executeLucky(final Player p)
     {
-        if(hasLucky())
-        {
-            getLuckyManager().roll(p);
-        }
+        Optional.ofNullable(luckyManager).ifPresent(lm -> lm.roll(p));
     }
     
     public void spawnMobs(final Location l, final ProjectileSource ps)
     {
-        if(hasMob())
-        {
-            getMobManager().spawnMob(l);
-        }
-
-        if(hasExplosive())
-        {
-            getExplosiveManager().spawn(l, ps);
-        }
+        Optional.ofNullable(mobManager).ifPresent(mm -> mm.spawnMob(l));
+        Optional.ofNullable(explosiveManager).ifPresent(em -> em.spawn(l, ps));
     }
 }

@@ -1,0 +1,15 @@
+Item:
+  id: diamond_helmet
+  name: "&2&lJump &fHelmet"
+  lore:
+    - "&7Equip it for get a permanent jump boost"
+    
+armorequip:
+  Action:
+    player:
+      - addPotion: type:jump,duration:1000000,level:1
+      
+armorunequip:
+  Action:
+    player:
+      - removePotion: jump

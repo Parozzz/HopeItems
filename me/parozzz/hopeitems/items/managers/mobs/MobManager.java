@@ -17,10 +17,14 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import me.parozzz.hopeitems.Configs;
 import me.parozzz.hopeitems.HopeItems;
+import me.parozzz.hopeitems.items.ItemCollection;
 import me.parozzz.hopeitems.items.ItemInfo;
+import me.parozzz.hopeitems.items.ItemInfo.When;
+import me.parozzz.hopeitems.items.ItemRegistry;
 import me.parozzz.hopeitems.items.managers.mobs.abilities.AbilityManager;
 import me.parozzz.hopeitems.items.managers.mobs.drops.DropManager;
-import me.parozzz.hopeitems.utilities.Utils;
+import me.parozzz.reflex.utilities.EntityUtil;
+import me.parozzz.reflex.utilities.ItemUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
@@ -28,7 +32,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -78,10 +81,10 @@ public class MobManager
             armor=aPath.getKeys(false).stream().map(aPath::getConfigurationSection).map(sPath -> 
             {
                 EquipmentSlot slot=EquipmentSlot.valueOf(sPath.getName().toUpperCase());
-                ItemStack item=Utils.getItemByPath(sPath);
+                ItemStack item = ItemUtil.getItemByPath(sPath);
                 float chance=((float)sPath.getDouble("chance", 0F))/100;
                 
-                Consumer<EntityEquipment> cns= equip -> Utils.addItem(equip, slot, item.clone(), chance);
+                Consumer<EntityEquipment> cns= equip -> EntityUtil.addItem(equip, slot, item.clone(), chance);
                 return cns;
             }).reduce(Consumer::andThen).orElseGet(() -> liv -> {});
         });
@@ -135,7 +138,9 @@ public class MobManager
         data.set("mobs", customMobs.entrySet().stream().map(e -> 
         {
             Map<String, String> map = new LinkedHashMap<>();
-            map.put(e.getKey().toString(), e.getValue().info.getName());
+            map.put("MOB_UID", e.getKey().toString());
+            map.put("ITEM_ID", e.getValue().info.getCollection().getId());
+            map.put("WHEN", e.getValue().info.getWhens().stream().findFirst().get().name());
             return map;
         }).collect(Collectors.toList()));
     }
@@ -144,20 +149,26 @@ public class MobManager
     {
         data.getMapList("mobs").stream()
                 .map(map -> (Map<String, String>)map)
-                .map(Map::entrySet)
-                .flatMap(Set::stream)
-                .forEach(e -> 
+                .forEach(map -> 
                 {
-                    Optional.ofNullable(Configs.getItemInfo(e.getValue()))
+                    ItemCollection collection = ItemRegistry.getCollection(map.get("ITEM_ID"));
+                    if(collection == null)
+                    {
+                        return;
+                    }
+                    
+                    UUID u = UUID.fromString(map.get("MOB_UID"));
+                    
+                    Optional.ofNullable(collection.getItemInfo(When.valueOf(map.get("WHEN"))))
                             .filter(ItemInfo::hasMob)
                             .map(info -> 
                             {
-                                customMobs.put(UUID.fromString(e.getKey()), info.getMobManager());
+                                customMobs.put(UUID.fromString(map.get("MOB_UID")), info.getMobManager());
                                 return info;
                             })
                             .orElseGet(() -> 
                             {
-                                Logger.getLogger(HopeItems.class.getSimpleName()).log(Level.SEVERE, "A configuration item named {0} does not exist. Skipping mob with uuid {1}", new Object[]{e.getValue(), e.getKey()}); 
+                                Logger.getLogger(HopeItems.class.getSimpleName()).log(Level.SEVERE, "A configuration item named {0} does not exist. Skipping mob with uuid {1}", new Object[]{collection.getId(), u.toString()}); 
                                 return null;
                             });
                 });

@@ -1,0 +1,300 @@
+
+#when:
+#  - interact
+#  - consume
+#  - splash
+#  - lingering
+#  - dispense
+#  - projectile
+#  - attackself
+#  - attackother
+#  - drop
+#  - dropOnGround
+#  - blockInteract
+#  - blockStep
+#  - blockDestroy
+  
+Item:
+  id: torch
+  name: "&6HopeItems &f&lExample &fItem"
+  lore:
+    - "&7This is an example item from &6HoepItems"
+    - "&7It contains every reward you can get from this plugin!"
+  amount: 1
+  unbreakable: true
+  flag:
+    - hide_unbreakable
+    - hide_enchants
+  enchant:
+    - arrow_fire: 1
+    - durability: 1
+  Attribute:
+    #From 1.8
+    - attack_damage: value:1,slot:mainhand,operation:0
+    - knockback_resistance: value:1,slot:mainhand,operation:0
+    - movement_speed: value:1,slot:mainhand,operation:0
+    - max_health: value:1,slot:mainhand,operation:0
+    #From 1.9
+    - armor: value:1,slot:mainhand,operation:0
+    - attack_speed: value:1,slot:mainhand,operation:0
+    - luck: value:1,slot:mainhand,operation:0
+    #From 1.11
+    - armor_toughtness: value:1,slot:mainhand,operation:0
+  tag:
+    - customTag: "CoolTag"
+    
+Crafting:
+  type: shapeless
+  material:
+    - diamond:0:3
+    - tnt:0:2
+#  Crafting:
+#    type: shaped
+#    shape:
+#      - xax
+#      - xxx
+#      - aaa
+#    material:
+#      x: tnt:0
+#      a: diamond:0
+#  Crafting:
+#    type: furnace
+#    source: diamond:0
+Cooldown:
+  default: 60 #Default time without any perms
+  message: "&cYou are on cooldown. &fWait &l&f{time}" #Message on cooldown. Set to "" to disable
+  permissions: 
+    - exampleitem.vip.cooldown: 30 #permission: timeToWait
+    - exampleitem.vip+.cooldown: 10
+    - exampleitem.vip++.cooldown: 0
+    
+all: #This is the when for this set of options. If you select ALL, effects will be triggered for every possible when. Otherwise, you can choose or multiple when splitted by a ","
+  removeOnUse: true
+  Explosive:
+    type: creeper #or TNT/Fireball
+    option:
+      - health: 100 #Does really works only on creepers
+      - friendly: true
+      - charged: true #Works only for creepers
+      - name: "&4Cool &fCreeper"
+      - power: 4
+      - fire: true
+      - blockdamage: true
+    modifierRange: 10
+    modifier:
+      - ender: damage:1.5~3.5
+      - stacker: type:sand,height:4
+      - potion: type:poison,duration:30,level:1
+      - fire: duration:10~15
+      - transmutation: from:water;stationary_water,to:air,range:4
+      - spawn: type:wither,quantity:1,lifetime:30 #Set lifetime to -1 to remove it
+      - thunder: damage:true
+  Mob:
+    type: zombie
+    option:
+      - name: "&2Zombie &bFresh"
+      - ride: spider
+      - potion: type:jump,duration:300,level:2
+      - health: 0~1024
+      - attribute: type:armor,value:0~30
+      - attribute: type:armor_toughness,value:0~30
+      - attribute: type:knockback_resistance,value:0~1
+      - attribute: type:movement_speed,value:0~1024
+      - attribute: type:attack_damage,value:0~2048
+    Armor:
+      head:
+        id: diamond_helmet
+        enchant:
+          - protection_environmental: 4
+          - durability: 3
+        chance: 13
+      chest:
+        id: diamond_chestplate
+        enchant:
+          - protection_environmental: 4
+          - durability: 3
+        chance: 13
+      legs:
+        id: diamond_leggings
+        enchant:
+          - protection_environmental: 4
+          - durability: 3
+        chance: 13
+      feet:
+        id: diamond_boots
+        enchant:
+          - protection_environmental: 4
+          - durability: 3
+        chance: 13
+      hand:
+        id: diamond_sword
+        enchant:
+          - damage_all: 4 
+          - durability: 3
+        chance: 13
+      #off_hand:  #Only 1.9+
+    Ability:
+      chance: 50
+      resistArrow: true
+      direct:
+        - potion: type:poison,duration:10,level:1,chance:65
+        - fire: duration:5,chance:55
+        - spawn: type:zombie,quantity:2,chance:15
+        - sniper: damage:0.2~0.4,quantity:4,delay:15,chance:65
+        - ender: damage:0.7~1.3,chance:25
+        - shield: duration:3,chance:65
+      passive:
+        - potion: type:poison,duration:10,level:1,chance:65
+        - fire: duration:5,chance:55
+        - spawn: type:zombie,quantity:2,chance:15
+        - sniper: damage:0.2~0.4,quantity:4,delay:15,chance:65
+        - ender: damage:0.7~1.3,chance:25
+        - shield: duration:3,chance:65
+    Drop:
+      Epic:
+        type: chest 
+        chestInfo: duration:30,id:diamond,name:&dEpic &fLoot
+        chance: 30
+        command:
+          - broadcast {player} has won a &dEpic &fLoot
+        customItems:
+          - customPotion
+        Items:
+          1:
+            id: diamond
+            amount: 4
+          2:
+            id: emerald
+            amount: 2
+      Rare:
+        chance: 60
+        type: chest 
+        chestInfo: duration:30,id:gold_ingot,name:&2Rare &fLoot
+        command:
+          - broadcast {player} has won a &2Rare &fLoot
+        customItems:
+          - mobEgg
+        Items:
+          1:
+            id: gold_ingot
+            amount: 2
+          2:
+            id: iron_ingot
+            amount: 4
+      Normal:
+        chance: 120
+        type: chest 
+        chestInfo: duration:30,id:coal,name:&7Normal &fLoot
+        command:
+          - broadcast {player} has won a &7Normal &fLoot
+        Items:
+          1:
+            id: coal
+            amount: 2
+          2:
+            id: iron_ingot
+            amount: 4
+  Condition:
+    location:
+      - world: value:world,message:&cYou need to use it in the normal world
+      - ylevel: value:10~255,message:&cYou must be above to y 10 to use
+      # - ylevel: 25
+      # - ylevel: >25
+      # - ylevel: <25
+      - worldguard: value:spawn,message:&cGo to the spawn to use it
+    player:
+      - permission: value:exampleitem.use,message:&cNo permission to use it
+      - gamemode: value:creative,message:&cThe item need to be used in creative mode
+      - sneaking: value:true,message:&cSneak next time!
+      - food: value:1~10,message:&cYou food bar is not in the right range! &f(1 to 10)
+      # - food: value:10,message:&cFood level is not right
+      # - food: value:>10,message:&cFood level is too high
+      # - food: value:<10,message:&cFood level is too low
+      - exp: value:100~250,message:&cYour exp level is not in the right range! &f(100 to 250)
+      # - exp: 255
+      # - exp: >255
+      # - exp: <255
+      - level: value:1~10,message:&cYour level is not in the right range! &f(1 to 10)
+      # - level: 5
+      # - exp: >5
+      # - exp: <5
+      - money: value:100~2000,message:&cYour money balance is not in the right range! &f(1 to 10)
+      # - money: 2000
+      # - money: >1000
+      # - money: <1000
+  Action:
+    player:
+      - addFood: 1~10
+      - setFood: 1~10
+      - addSaturation: 1.5~2.5
+      - setSaturation: 1.5~2.5
+      - setHealth: 5~10
+      - giveHealth: 5~10
+      - giveExp: 50~100
+      - setExp: 50~100
+      - addLevel: 1~5
+      - setLevel: 1~5
+      - setFly: true
+      - setFire: -1
+      - addPotion: type:jump,duration:300,level:2
+      - removePotion: jump #all
+      - money: 100
+      # - money: -200
+      - setGamemode: survival
+      - teleport: world:world,x:0,y:20,z:0
+      - playercommand: tell &cI'm cool
+      - consolecommand: warp spawn {player}
+      - opcommand: broadcast &cBroadcasting by {player}!
+      - title: title:&6Cool &fTitle,subtitle:&6Cool &fSubTitle,in:10,stay:50,out:10
+      - actionbar: "&fThis is an &6ActionBar!"
+      - message: "&fThis is a &6chat &fmessage!"
+      - chat: "&fYou all can find me in {world} at {x} {y} {z}!"
+    playerEffect:
+      #- sound: name:ENTITY_EXPERIENCE_ORB_PICKUP,volume:1,pitch:1
+      - particle: name:spell_mob,effect:static,quantity:100
+      - teleport: true
+    worldEffect:
+      - message: "&fThis message will be displayed in &6{world}"
+      - actionbar: "&fThis actionbar will be displayed in &6{world}"
+      - title: title:&fThis title will be displayed,subtitle:&fin {world},in:10,stay:50,out:10
+      - thunder: true
+      - particle: name:spell_mob,effect:explosion,quantity:100
+      - explosion: power:5,fire:true,damage:true
+      - command: spawnmob pig {world} {x} {y} {z}
+  Lucky:
+    animation: gui
+    Gui:
+      title: "&cRandom &dRewards"
+      rows: 6
+      slot: 45,36,27,18,10,2,3,4,5,6,16,26,35,43,51,50,49,40,31
+      winSlot: 31
+      roll: 40
+      Items:
+        22,13:
+          id: stained_glass_pane
+          data: 13
+          name: '&7&lVVV'
+        30,29:
+          id: stained_glass_pane
+          data: 13
+          name: '&7&l-->'
+        32,33:
+          id: stained_glass_pane
+          data: 13
+          name: '&7&l<--'
+    Rewards:
+      First:
+        items:
+          - mobEgg
+        Preview:
+          id: monster_egg
+          data: creeper
+          name: "&2Cegg"
+        chance: 30
+      Second:
+        items:
+          - customPotion
+        Preview:
+          id: potion
+          name: "&7Potion"
+        chance: 20

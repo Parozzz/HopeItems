@@ -5,16 +5,19 @@
  */
 package me.parozzz.hopeitems.items.managers.actions;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import me.parozzz.hopeitems.Dependency;
 import me.parozzz.hopeitems.items.managers.ManagerUtils;
-import me.parozzz.hopeitems.utilities.placeholders.Placeholder;
-import me.parozzz.hopeitems.utilities.Utils;
-import me.parozzz.hopeitems.utilities.classes.MapArray;
-import me.parozzz.hopeitems.utilities.classes.SimpleMapList;
-import me.parozzz.hopeitems.utilities.reflection.API;
+import me.parozzz.reflex.NMS.entity.EntityPlayer;
+import me.parozzz.reflex.NMS.packets.ChatPacket;
+import me.parozzz.reflex.NMS.packets.ChatPacket.MessageType;
+import me.parozzz.reflex.classes.MapArray;
+import me.parozzz.reflex.classes.SimpleMapList;
+import me.parozzz.reflex.classes.SoundManager;
+import me.parozzz.reflex.placeholders.Placeholder;
+import me.parozzz.reflex.utilities.EntityUtil;
+import me.parozzz.reflex.utilities.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -52,14 +55,14 @@ public enum ActionType
                     case "sethealth":
                         player.addAction(ManagerUtils.getNumberFunction(value, Function.identity(), (p, d)-> 
                         {
-                            double maxHealth=Utils.getMaxHealth(p);
+                            double maxHealth = EntityUtil.getMaxHealth(p);
                             p.setHealth(d>maxHealth ? maxHealth : d);
                         }));
                         break;
                     case "givehealth":
                         player.addAction(ManagerUtils.getNumberFunction(value, Function.identity(), (p ,d)-> 
                         {
-                            double maxHealth=Utils.getMaxHealth(p);
+                            double maxHealth = EntityUtil.getMaxHealth(p);
                             p.setHealth(p.getHealth()+d > maxHealth ? maxHealth : p.getHealth()+d);
                         }));
                         break;
@@ -67,7 +70,7 @@ public enum ActionType
                         player.addAction(ManagerUtils.getNumberFunction(value, Number::intValue, (p, d)-> p.giveExp(d)));
                         break;
                     case "setexp":
-                        player.addAction(ManagerUtils.getNumberFunction(value, Number::intValue, Utils::setExp));
+                        player.addAction(ManagerUtils.getNumberFunction(value, Number::intValue, EntityUtil::setExp));
                         break;
                     case "givelevel":
                         player.addAction(ManagerUtils.getNumberFunction(value, Number::intValue, (p,d)-> p.setLevel(p.getLevel()+d)));
@@ -146,19 +149,19 @@ public enum ActionType
                         });
                         break;
                     case "title":
-                        ManagerUtils.Title playerTitle=ManagerUtils.getTitle(new MapArray(value));
+                        ManagerUtils.Title playerTitle = ManagerUtils.getTitle(new MapArray(value));
                         player.addAction(playerTitle.getConsumer());
                         break;
                     case "actionbar":
-                        Placeholder actionBar= new Placeholder(Utils.color(value)).checkPlayer().checkLocation();
-                        player.addAction(p -> API.getActionBar().send(p, actionBar.parse(p, p.getLocation())));
+                        Placeholder actionBar= new Placeholder(Util.cc(value)).checkPlayer().checkLocation();
+                        player.addAction(p -> EntityPlayer.getNMSPlayer(p).getPlayerConnection().sendPacket(new ChatPacket(MessageType.ACTIOBAR, actionBar.parse(p, p.getLocation()))));
                         break;
                     case "message":
-                        Placeholder message=new Placeholder(Utils.color(value)).checkPlayer().checkLocation();
+                        Placeholder message=new Placeholder(Util.cc(value)).checkPlayer().checkLocation();
                         player.addAction(p -> p.sendMessage(message.parse(p, p.getLocation())));
                         break;
                     case "chat":
-                        Placeholder chat=new Placeholder(Utils.color(value)).checkLocation().checkPlayer();
+                        Placeholder chat=new Placeholder(Util.cc(value)).checkLocation().checkPlayer();
                         player.addAction(p -> p.chat(chat.parse(p, p.getLocation())));
                         break;
                 }  
@@ -176,12 +179,12 @@ public enum ActionType
                 switch(key)
                 {
                     case "message":
-                        Placeholder message=new Placeholder(Utils.color(value)).checkLocation();
+                        Placeholder message=new Placeholder(Util.cc(value)).checkLocation();
                         world.addAction(l -> l.getWorld().getPlayers().forEach(p -> p.sendMessage(message.parse(l))));
                         break;
                     case "actionbar":
-                        Placeholder actionbar=new Placeholder(Utils.color(value)).checkLocation();
-                        world.addAction(l -> l.getWorld().getPlayers().forEach(p -> API.getActionBar().send(p, actionbar.parse(l))));
+                        Placeholder actionbar=new Placeholder(Util.cc(value)).checkLocation();
+                        world.addAction(l -> l.getWorld().getPlayers().forEach(p -> EntityPlayer.getNMSPlayer(p).getPlayerConnection().sendPacket(new ChatPacket(MessageType.ACTIOBAR, actionbar.parse(l)))));
                         break;
                     case "title":
                         ManagerUtils.Title title=ManagerUtils.getTitle(new MapArray(value));
@@ -192,10 +195,10 @@ public enum ActionType
                         world.addAction(damage ? l -> l.getWorld().strikeLightning(l) : l -> l.getWorld().strikeLightningEffect(l));
                         break;
                     case "particle":
-                        world.addAction(ManagerUtils.spawnParticle(value.split(",")));
+                        world.addAction(ManagerUtils.spawnParticle(new MapArray(value)));
                         break;
                     case "explosion":
-                        world.addAction(ManagerUtils.createExplosion(value.split(",")));
+                        world.addAction(ManagerUtils.createExplosion(new MapArray(value)));
                         break;
                     case "command":
                         Placeholder command=new Placeholder(value).checkLocation();
@@ -221,8 +224,8 @@ public enum ActionType
                         playerEffect.addAction((p, l) -> p.teleport(l));
                         break;
                     case "sound":
-                        ManagerUtils.Sound playerSound=ManagerUtils.getSound(value.split(","));
-                        playerEffect.addAction((p, l) -> playerSound.playSound(l, p));
+                        SoundManager playerSound = ManagerUtils.getSound(new MapArray(value));
+                        playerEffect.addAction((p, l) -> playerSound.play(l, p));
                         break;
                 }
             });

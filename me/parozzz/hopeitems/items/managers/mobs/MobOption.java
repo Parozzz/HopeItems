@@ -11,10 +11,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import me.parozzz.hopeitems.HopeItems;
 import me.parozzz.hopeitems.items.managers.ManagerUtils;
-import me.parozzz.hopeitems.utilities.Debug;
-import me.parozzz.hopeitems.utilities.MCVersion;
-import me.parozzz.hopeitems.utilities.Utils;
-import me.parozzz.hopeitems.utilities.classes.MapArray;
+import me.parozzz.reflex.Debug;
+import me.parozzz.reflex.MCVersion;
+import me.parozzz.reflex.classes.MapArray;
+import me.parozzz.reflex.utilities.EntityUtil;
+import me.parozzz.reflex.utilities.Util;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -30,7 +31,7 @@ public enum MobOption
         @Override
         public Consumer<LivingEntity> getConsumer(String value)
         {
-            String name=Utils.color(value);
+            String name = Util.cc(value);
             return liv ->
             {
                 liv.setCustomName(name);
@@ -50,7 +51,7 @@ public enum MobOption
         @Override
         public Consumer<LivingEntity> getConsumer(final String value)
         {
-            PotionEffect pe=ManagerUtils.getPotionEffect(new MapArray(value));
+            PotionEffect pe = ManagerUtils.getPotionEffect(new MapArray(value));
             return liv -> liv.addPotionEffect(pe, true);
         }
     }, 
@@ -58,7 +59,7 @@ public enum MobOption
         @Override
         public Consumer<LivingEntity> getConsumer(final String value)
         {
-            return ManagerUtils.getNumberFunction(value, Double::valueOf, Utils::setMaxHealth);
+            return ManagerUtils.getNumberFunction(value, Double::valueOf, EntityUtil::setMaxHealth);
         }
     }, 
     ATTRIBUTE{

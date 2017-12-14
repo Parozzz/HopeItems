@@ -6,6 +6,7 @@
 package me.parozzz.hopeitems.items.managers;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -13,15 +14,19 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import me.parozzz.hopeitems.utilities.Debug;
-import me.parozzz.hopeitems.utilities.Utils;
-import me.parozzz.hopeitems.utilities.classes.MapArray;
-import me.parozzz.hopeitems.utilities.placeholders.Placeholder;
-import me.parozzz.hopeitems.utilities.reflection.API;
-import me.parozzz.hopeitems.utilities.reflection.ParticleManager;
-import me.parozzz.hopeitems.utilities.reflection.ParticleManager.ParticleEffect;
-import me.parozzz.hopeitems.utilities.reflection.ParticleManager.ParticleEnum;
 import org.bukkit.Bukkit;
+import me.parozzz.reflex.*;
+import me.parozzz.reflex.NMS.basics.NMSServer;
+import me.parozzz.reflex.NMS.entity.EntityPlayer;
+import me.parozzz.reflex.NMS.packets.ParticlePacket.ParticleEnum;
+import me.parozzz.reflex.NMS.packets.TitlePacket;
+import me.parozzz.reflex.NMS.packets.TitlePacket.TitleType;
+import me.parozzz.reflex.classes.MapArray;
+import me.parozzz.reflex.classes.SoundManager;
+import me.parozzz.reflex.placeholders.Placeholder;
+import me.parozzz.reflex.utilities.ParticleUtil;
+import me.parozzz.reflex.utilities.ParticleUtil.ParticleEffect;
+import me.parozzz.reflex.utilities.Util;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -33,112 +38,36 @@ import org.bukkit.potion.PotionEffectType;
  */
 public class ManagerUtils 
 {
-    public static Consumer<Location> createExplosion(final String[] t)
+    public static Consumer<Location> createExplosion(final MapArray map)
     {
-        Object[] o=new Object[3];
-        Stream.of(t).map(s -> s.split(":")).forEach(a -> 
-        {
-            switch(a[0].toLowerCase())
-            {
-                case "power":
-                    o[0]=Float.valueOf(a[1]);
-                    break;
-                case "fire":
-                    o[1]=Boolean.valueOf(a[1]);
-                    break;
-                case "damage":
-                    o[2]=Boolean.valueOf(a[1]);
-                    break;
-            }
-        });
-        return l -> l.getWorld().createExplosion(l.getX(), l.getY(), l.getZ(), (float)o[0], (boolean)o[1], (boolean)o[2]);
+        float power = map.getValue("power", Float::valueOf);
+        boolean fire = map.getUpperValue("fire", Boolean::valueOf);
+        boolean damage = map.getUpperValue("damage", Boolean::valueOf);
+        
+        return l -> l.getWorld().createExplosion(l.getX(), l.getY(), l.getZ(), power, fire, damage);
     }
     
-    public static Sound getSound(final String[] t)
+    public static SoundManager getSound(final MapArray map)
     {
-        Sound sound=new Sound();
-        Stream.of(t).map(s -> s.split(":")).forEach(a -> 
-        {
-            switch(a[0].toLowerCase())
-            {
-                case "name":
-                    sound.setSound(a[1]);
-                    break;
-                case "volume":
-                    sound.setVolume(Float.valueOf(a[1]));
-                    break;
-                case "pitch":
-                    sound.setPitch(Float.valueOf(a[1]));
-                    break;
-            }
-        });
-        return sound;
+        return new SoundManager(map.getValue("name"), map.getValue("volume", Float::valueOf), map.getValue("pitch", Float::valueOf));
     }
     
-    public final static class Sound
+    public static Consumer<Location> spawnParticle(final MapArray t)
     {
-        public org.bukkit.Sound sound;
-        public void setSound(final String s)
-        {
-            try { sound=org.bukkit.Sound.valueOf(s.toUpperCase()); }
-            catch(final IllegalArgumentException ex) { throw new IllegalArgumentException("A sound named "+s+" does not exist"); } 
-        }
+        ParticleEnum particle = Debug.validateEnum(t.getValue("name"), ParticleEnum.class);
+        ParticleEffect effect = Debug.validateEnum(t.getValue("effect"), ParticleEffect.class);
+        int quantity = t.getValue("quantity", Integer::valueOf);
         
-        public float volume=1F;
-        public void setVolume(final float f)
-        {
-            volume=f;
-        }
-        
-        public float pitch=1F;
-        public void setPitch(final float f)
-        {
-            pitch=f;
-        }
-        
-        public void playSound(final Location l, final Player p)
-        {
-            p.playSound(l, sound, volume, pitch);
-        }
-        
-        public void playSound(final Location l)
-        {
-            l.getWorld().playSound(l, sound, volume, pitch);
-        }
-    }
-    
-    public static Consumer<Location> spawnParticle(final String[] t)
-    {
-        Object o[]=new Object[3];
-        Stream.of(t).map(s -> s.split(":")).forEach(a -> 
-        {
-            switch(a[0].toLowerCase())
-            {
-                case "name":
-                    try { o[0]=ParticleManager.ParticleEnum.valueOf(a[1].toUpperCase()); }
-                    catch(IllegalArgumentException ex) { throw new IllegalArgumentException("A particle named "+a[1]+" does not exist"); }
-                    break;
-                case "effect":
-                    try { o[1]=ParticleManager.ParticleEffect.valueOf(a[1].toUpperCase()); }
-                    catch(IllegalArgumentException ex) { throw new IllegalArgumentException("A particle effect named "+a[1]+" does not exit"); }
-                    break;
-                case "quantity":
-                    o[2]=Integer.valueOf(a[1]);
-                    break;
-            }
-        });
-        return l -> API.getParticleManager().spawn(l.getWorld().getPlayers(), (ParticleManager.ParticleEffect)o[1], (ParticleManager.ParticleEnum)o[0], l, (int)o[2]);
+        return l -> ParticleUtil.playParticleEffect(l, particle, effect, quantity);
     }
     
     public static BiConsumer<Player, Location> spawnPlayerParticle(final MapArray map)
     {
-        Object o[]=new Object[3];
-        
         ParticleEnum particle = Debug.validateEnum(map.getValue("name", Function.identity()), ParticleEnum.class);
         ParticleEffect effect = Debug.validateEnum(map.getValue("effect", Function.identity()), ParticleEffect.class);
         int quantity = map.getValue("quantity", Integer::valueOf);
 
-        return (p, l) -> API.getParticleManager().spawn(p, effect, particle, l, quantity);
+        return (p, l) -> ParticleUtil.playParticleEffect(l, particle, effect, quantity, p);
     }
     
     public static PotionEffect getPotionEffect(final MapArray map)
@@ -149,56 +78,56 @@ public class ManagerUtils
     public static Title getTitle(final MapArray map)
     {
         Title title=new Title();
-        map.getKeys().forEach((key, value) -> 
-        {
-            switch(key)
-            {
-                case "title":
-                    title.title=Utils.color(value);
-                    break;
-                case "subtitle":
-                    title.subTitle=Utils.color(value);
-                    break;
-                case "in":
-                    title.fadeIn=Integer.valueOf(value);
-                    break;
-                case "stay":
-                    title.stay=Integer.valueOf(value);
-                    break;
-                case "out":
-                    title.fadeOut=Integer.valueOf(value);
-                    break;
-            }
-        });
+        
+        title.fadeIn = map.getValue("in", Integer::valueOf);
+        title.stay = map.getValue("stay", Integer::valueOf);
+        title.fadeOut = map.getValue("out", Integer::valueOf);
+        
+        title.title = map.hasKey("title") ? new Placeholder(map.getValue("title", Util::cc)).checkLocation().checkPlayer() : null;
+        title.subTitle = map.hasKey("subtitle") ? new Placeholder(map.getValue("subtitle", Util::cc)).checkLocation().checkPlayer() : null;
+        
         return title;
     }
     
     public static final class Title
     {
-        public String title="";
-        public String subTitle="";
-        public int fadeIn=20;
-        public int stay=60;
-        public int fadeOut=20;
+        protected Placeholder title;
+        protected Placeholder subTitle;
+        
+        protected int fadeIn;
+        protected int stay;
+        protected int fadeOut;
         
         public Consumer<Player> getConsumer()
         {
-            Placeholder title=new Placeholder(this.title).checkLocation().checkPlayer();
-            Placeholder subTitle=new Placeholder(this.subTitle).checkLocation().checkPlayer();
-            return p -> API.getTitle().sendTitleAndSubTitle(title.parse(p, p.getLocation()), subTitle.parse(p, p.getLocation()), p, fadeIn, stay, fadeOut);
+            return p -> 
+            {
+                EntityPlayer ep = EntityPlayer.getNMSPlayer(p);
+                
+                Location l = p.getLocation();
+                ep.getPlayerConnection().sendPacket(Optional.ofNullable(title)
+                        .map(holder -> new TitlePacket(TitleType.TITLE, holder.parse(p, l), fadeIn, stay, fadeOut))
+                        .orElseGet(() -> new TitlePacket(TitleType.TITLE, "", fadeIn, stay, fadeOut)));
+                
+                Optional.ofNullable(subTitle).ifPresent(holder -> ep.getPlayerConnection().sendPacket(new TitlePacket(TitleType.SUBTITLE, holder.parse(p, l), fadeIn, stay, fadeOut)));
+            };
         }
         
         public Consumer<Location> getWorldConsumer()
         {
-            Placeholder title=new Placeholder(this.title).checkLocation();
-            Placeholder subTitle=new Placeholder(this.subTitle).checkLocation();
-            return l -> l.getWorld().getPlayers().forEach(p -> API.getTitle().sendTitleAndSubTitle(title.parse(l), subTitle.parse(l), p, fadeIn, stay, fadeOut));
+            return l -> 
+            {
+                NMSServer.getServer().sendAll(Optional.ofNullable(title)
+                        .map(holder -> new TitlePacket(TitleType.TITLE, holder.parse(l), fadeIn, stay, fadeOut))
+                        .orElseGet(() -> new TitlePacket(TitleType.TITLE, "", fadeIn, stay, fadeOut)));
+                Optional.ofNullable(subTitle).ifPresent(holder -> NMSServer.getServer().sendAll(new TitlePacket(TitleType.SUBTITLE, holder.parse(l), fadeIn, stay, fadeOut)));
+            };
         }
     }
     
     public static Consumer<Player> teleportPlayer(final MapArray map)
     {
-        Location l=new Location(map.getValue("world", Bukkit::getWorld), map.getValue("x", Integer::valueOf), map.getValue("y", Integer::valueOf), map.getValue("z", Integer::valueOf));
+        Location l = new Location(map.getValue("world", Bukkit::getWorld), map.getValue("x", Integer::valueOf), map.getValue("y", Integer::valueOf), map.getValue("z", Integer::valueOf));
         return p -> p.teleport(l);
     }
             
@@ -247,9 +176,5 @@ public class ManagerUtils
             return v -> v==t;
         }
     }
-    
-    public static Stream<String[]> splitArray(final String[] array)
-    {
-        return Stream.of(array).map(s -> s.split(":"));
-    }
+
 }

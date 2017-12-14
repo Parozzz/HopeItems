@@ -8,8 +8,8 @@ package me.parozzz.hopeitems.items.managers.mobs.abilities;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 import me.parozzz.hopeitems.items.managers.mobs.MobManager;
-import me.parozzz.hopeitems.utilities.Debug;
-import me.parozzz.hopeitems.utilities.classes.ComplexMapList;
+import me.parozzz.reflex.Debug;
+import me.parozzz.reflex.classes.ComplexMapList;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.LivingEntity;
 

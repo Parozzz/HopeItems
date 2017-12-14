@@ -9,14 +9,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import me.parozzz.hopeitems.items.ItemInfo;
+import me.parozzz.hopeitems.items.ItemInfo.When;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyManager;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyReward;
-import me.parozzz.hopeitems.utilities.MCVersion;
-import me.parozzz.hopeitems.utilities.Utils;
+import me.parozzz.reflex.MCVersion;
+import me.parozzz.reflex.utilities.InventoryUtil;
+import me.parozzz.reflex.utilities.ItemUtil;
+import me.parozzz.reflex.utilities.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
@@ -42,7 +45,7 @@ public class GUIAnimation implements Animation
     
     public GUIAnimation(final ConfigurationSection path)
     {
-        i=Bukkit.createInventory(null, path.getInt("rows")*9, Utils.color(path.getString("title")));
+        i=Bukkit.createInventory(null, path.getInt("rows")*9, Util.cc(path.getString("title")));
         
         slots=Stream.of(path.getString("slot").split(",")).map(Integer::valueOf).collect(Collectors.toList());
         winSlot=path.getInt("winSlot");
@@ -51,7 +54,7 @@ public class GUIAnimation implements Animation
         ConfigurationSection iPath=path.getConfigurationSection("Items");
         iPath.getKeys(false).stream().map(iPath::getConfigurationSection).forEach(sPath -> 
         {
-            ItemStack item=Utils.getItemByPath(sPath);
+            ItemStack item = ItemUtil.getItemByPath(sPath);
             Stream.of(sPath.getName().split(",")).map(Integer::valueOf).forEach(slot -> i.setItem(slot, item));
         });
     }
@@ -60,7 +63,7 @@ public class GUIAnimation implements Animation
     @Override
     public void roll(final List<LuckyReward> rewards, final Player p) 
     {
-        Inventory i = Utils.cloneChestInventory(this.i);
+        Inventory i = InventoryUtil.clone(this.i);
         
         Map<Integer, LuckyReward> map=new HashMap<>();
         slots.forEach(slot -> 
@@ -82,7 +85,7 @@ public class GUIAnimation implements Animation
     private class Roll extends BukkitRunnable implements AnimationRunnable
     {
         private final Player p;
-        private final Map<Integer,LuckyReward> map;
+        private final Map<Integer , LuckyReward> map;
         private final List<LuckyReward> rewards;
         private final Inventory i;
         
@@ -195,12 +198,15 @@ public class GUIAnimation implements Animation
         private void reward()
         {
             isEnded = true;
-            LuckyReward reward=map.get(winSlot);
-            reward.getItems().forEach(info -> 
+            LuckyReward reward = map.get(winSlot);
+            reward.getItems().forEach(collection -> 
             {
                 Location l = p.getLocation();
-                p.getInventory().addItem(info.getItem().parse(p, l));
-                info.execute(l, p, false);
+                p.getInventory().addItem(collection.getItem().parse(p, l));
+                if(collection.hasWhen(When.NONE))
+                {
+                    collection.getItemInfo(When.NONE).execute(l, p, false);
+                }
             });
         }
         

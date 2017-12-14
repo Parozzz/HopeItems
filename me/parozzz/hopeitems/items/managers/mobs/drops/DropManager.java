@@ -14,16 +14,18 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import me.parozzz.hopeitems.Configs;
+import me.parozzz.hopeitems.items.ItemCollection;
 import me.parozzz.hopeitems.items.ItemInfo;
+import me.parozzz.hopeitems.items.ItemRegistry;
 import me.parozzz.hopeitems.items.managers.mobs.MobManager;
-import me.parozzz.hopeitems.utilities.Debug;
-import me.parozzz.hopeitems.utilities.placeholders.Placeholder;
-import me.parozzz.hopeitems.utilities.Utils;
-import me.parozzz.hopeitems.utilities.classes.MapArray;
+import me.parozzz.reflex.Debug;
+import me.parozzz.reflex.classes.MapArray;
+import me.parozzz.reflex.placeholders.Placeholder;
+import me.parozzz.reflex.utilities.ItemUtil;
+import me.parozzz.reflex.utilities.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -59,11 +61,11 @@ public class DropManager
             Set<String> customItems=nPath.getStringList("customItems").stream().collect(Collectors.toSet());
             
             ConfigurationSection iPath=nPath.getConfigurationSection("Items");
-            Set<ItemStack> items=iPath.getKeys(false).stream().map(iPath::getConfigurationSection).map(Utils::getItemByPath).collect(Collectors.toSet());
+            Set<ItemStack> items=iPath.getKeys(false).stream().map(iPath::getConfigurationSection).map(ItemUtil::getItemByPath).collect(Collectors.toSet());
             
             BiConsumer<Location, Player> commands=nPath.getStringList("command").stream().map(cmd -> 
             {
-                Placeholder holder=new Placeholder(cmd).checkLocation().checkPlayer();
+                Placeholder holder = new Placeholder(cmd).checkLocation().checkPlayer();
 
                 BiConsumer<Location, Player> cns= (l, p) -> Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), holder.parse(p, l));
                 return cns;
@@ -87,9 +89,9 @@ public class DropManager
                                     items.stream()
                                             .map(ItemStack::clone),
                                     customItems.stream()
-                                            .map(Configs::getItemInfo)
+                                            .map(ItemRegistry::getCollection)
                                             .filter(Objects::nonNull)
-                                            .map(ItemInfo::getItem)
+                                            .map(ItemCollection::getItem)
                                             .map(holder -> holder.parse(p, e.getEntity().getLocation()))).toArray(ItemStack[]::new)).values()      
                                     .forEach(extra -> p.getWorld().dropItem(p.getLocation(), extra));
                         });
@@ -100,7 +102,7 @@ public class DropManager
                     
                     MapArray map = new MapArray(nPath.getString("chestInfo"));
                     preview.type = Debug.validateEnum(map.getValue("id"), Material.class);
-                    preview.name = map.getValue("name", Utils::color);
+                    preview.name = map.getValue("name", Util::cc);
                     preview.duration = map.getValue("duration", Integer::valueOf);
                     
                     onDeathEvent= e->
@@ -165,9 +167,9 @@ public class DropManager
                                     items.stream()
                                             .map(ItemStack::clone),
                                     customItems.stream()
-                                            .map(Configs::getItemInfo)
+                                            .map(ItemRegistry::getCollection)
                                             .filter(Objects::nonNull)
-                                            .map(ItemInfo::getItem)
+                                            .map(ItemCollection::getItem)
                                             .map(holder -> holder.parse(p, e.getEntity().getLocation()))).toArray(ItemStack[]::new));
                         });
                     };
@@ -183,9 +185,9 @@ public class DropManager
                                     items.stream()
                                             .map(ItemStack::clone),
                                     customItems.stream()
-                                            .map(Configs::getItemInfo)
+                                            .map(ItemRegistry::getCollection)
                                             .filter(Objects::nonNull)
-                                            .map(ItemInfo::getItem)
+                                            .map(ItemCollection::getItem)
                                             .map(holder -> holder.parse(p, e.getEntity().getLocation()))).collect(Collectors.toList()));
                         });
                     };
@@ -214,7 +216,7 @@ public class DropManager
         
         public ArmorStand spawnHologram(final Location l)
         {
-            ArmorStand stand=Utils.spawnHologram(l, name);
+            ArmorStand stand = Util.spawnHologram(l, name);
             stand.setHelmet(new ItemStack(type));
             stand.setMarker(false);
             return stand;

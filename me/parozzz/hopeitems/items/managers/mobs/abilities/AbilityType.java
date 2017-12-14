@@ -12,12 +12,12 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import me.parozzz.hopeitems.items.managers.ManagerUtils;
 import me.parozzz.hopeitems.items.managers.mobs.MobManager;
-import me.parozzz.hopeitems.utilities.Debug;
-import me.parozzz.hopeitems.utilities.classes.MapArray;
-import me.parozzz.hopeitems.utilities.classes.Task;
-import me.parozzz.hopeitems.utilities.reflection.API;
-import me.parozzz.hopeitems.utilities.reflection.ParticleManager.ParticleEffect;
-import me.parozzz.hopeitems.utilities.reflection.ParticleManager.ParticleEnum;
+import me.parozzz.reflex.Debug;
+import me.parozzz.reflex.NMS.packets.ParticlePacket;
+import me.parozzz.reflex.NMS.packets.ParticlePacket.ParticleEnum;
+import me.parozzz.reflex.classes.MapArray;
+import me.parozzz.reflex.utilities.ParticleUtil;
+import me.parozzz.reflex.utilities.ParticleUtil.ParticleEffect;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -110,7 +110,7 @@ public enum AbilityType
                             randomDamage.accept(arrow);
                             arrow.setVelocity(other.getLocation().getDirection().multiply(-2));
                             
-                            API.getParticleManager().spawn(mob.getWorld().getPlayers(), ParticleEffect.CLOUD, ParticleEnum.CLOUD, mob.getEyeLocation(), 2);
+                            ParticleUtil.playParticleEffect(mob.getEyeLocation(), ParticleEnum.CLOUD, ParticleEffect.CLOUD, 2);
                         }
 
                     }.runTaskTimer(JavaPlugin.getProvidingPlugin(AbilityType.class), 0L, delay);
@@ -129,7 +129,7 @@ public enum AbilityType
             {
                 if(ThreadLocalRandom.current().nextInt(101)<chance)
                 {
-                    API.getParticleManager().spawn(mob.getWorld().getPlayers(), ParticleEffect.CLOUD, ParticleEnum.PORTAL, mob.getLocation(), 80);
+                    ParticleUtil.playParticleEffect(mob.getLocation(), ParticleEnum.PORTAL, ParticleEffect.CLOUD, 80);
                     mob.teleport(other);
                     randomDamage.accept(other);
                 }
@@ -160,7 +160,7 @@ public enum AbilityType
                                 return;
                             }
                             mob.setNoDamageTicks(20);
-                            API.getParticleManager().spawn(mob.getWorld().getPlayers(), ParticleEffect.SPHERE, ParticleEnum.FLAME, mob.getEyeLocation(), 2);
+                            ParticleUtil.playParticleEffect(mob.getEyeLocation(), ParticleEnum.FLAME, ParticleEffect.SPHERE, 2);
                         }
                     }.runTaskTimer(JavaPlugin.getProvidingPlugin(AbilityType.class), 0L, 10L);
                 }

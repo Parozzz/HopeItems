@@ -6,13 +6,12 @@
 package me.parozzz.hopeitems.items.managers.conditions;
 
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import me.parozzz.hopeitems.Dependency;
 import me.parozzz.hopeitems.items.managers.ManagerUtils;
-import me.parozzz.hopeitems.utilities.Utils;
-import me.parozzz.hopeitems.utilities.classes.ComplexMapList;
+import me.parozzz.reflex.classes.ComplexMapList;
+import me.parozzz.reflex.utilities.Util;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -31,7 +30,7 @@ public enum ConditionType
             ConditionManager<Player> player=new ConditionManager<>(this);
             list.getMapArrays().forEach((key, map) -> 
             {
-                String message = map.getValue("message", Utils::color);
+                String message = map.getValue("message", Util::cc);
                 String value = map.getValue("value", Function.identity());
                 
                 switch(key)
@@ -80,7 +79,7 @@ public enum ConditionType
             ConditionManager<Location> location=new ConditionManager<>(this);
             list.getMapArrays().forEach((key, map) -> 
             {
-                String message = map.getValue("message", Utils::color);
+                String message = map.getValue("message", Util::cc);
                 String value = map.getValue("value", Function.identity());
                 
                 switch(key)

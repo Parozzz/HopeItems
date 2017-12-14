@@ -7,5 +7,5 @@ commands:
     aliases: [hpi]
     Usage: /items
     Description: Main Command
-softdepend: [Vault,WorldGuard]
+softdepend: [Vault, WorldGuard]
 

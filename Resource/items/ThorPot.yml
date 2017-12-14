@@ -1,0 +1,10 @@
+Item:
+  id: splash_potion
+  type: speed
+  name: "&6Thor &fPotion"
+  lore:
+    - "&7Smite your enemies"
+splash:
+  Action:
+    worldEffect:
+      - thunder: true

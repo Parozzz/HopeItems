@@ -16,7 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import me.parozzz.hopeitems.Configs;
 import me.parozzz.hopeitems.HopeItems;
-import me.parozzz.hopeitems.utilities.Utils;
+import me.parozzz.reflex.utilities.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
@@ -59,9 +59,8 @@ public class Shop
     {
         pages.clear();
         titles.clear();
-        try 
-        {
-            FileConfiguration c=Utils.fileStartup(new File(JavaPlugin.getPlugin(HopeItems.class).getDataFolder(), "shop.yml"));
+        try {
+            FileConfiguration c = Util.fileStartup(new File(JavaPlugin.getPlugin(HopeItems.class).getDataFolder(), "shop.yml"));
             
             c.getKeys(false).stream().map(c::getConfigurationSection).forEach(pPath -> 
             {
@@ -71,9 +70,7 @@ public class Shop
                 pages.put(pageName.toLowerCase(), page);
                 titles.put(page.getInventory().getTitle(), page);
             });
-        } 
-        catch (FileNotFoundException | UnsupportedEncodingException ex) 
-        {
+        } catch (FileNotFoundException | UnsupportedEncodingException ex) {
             Logger.getLogger(Shop.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

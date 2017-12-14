@@ -10,8 +10,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import me.parozzz.hopeitems.Configs;
+import me.parozzz.hopeitems.items.ItemCollection;
 import me.parozzz.hopeitems.items.ItemInfo;
-import me.parozzz.hopeitems.utilities.Utils;
+import me.parozzz.hopeitems.items.ItemRegistry;
+import me.parozzz.reflex.utilities.ItemUtil;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 
@@ -26,7 +28,7 @@ public class LuckyReward
     private final int chance;
     public LuckyReward(final ConfigurationSection path)
     {
-        preview=Optional.ofNullable(path.getConfigurationSection("Preview")).map(Utils::getItemByPath).orElse(null);
+        preview=Optional.ofNullable(path.getConfigurationSection("Preview")).map(ItemUtil::getItemByPath).orElse(null);
         items=path.getStringList("items").stream().collect(Collectors.toSet());
         chance=path.getInt("chance", 10);
     }
@@ -36,9 +38,9 @@ public class LuckyReward
         return preview.clone();
     }
     
-    public Set<ItemInfo> getItems()
+    public Set<ItemCollection> getItems()
     {
-        return items.stream().map(Configs::getItemInfo).filter(Objects::nonNull).collect(Collectors.toSet());
+        return items.stream().map(ItemRegistry::getCollection).filter(Objects::nonNull).collect(Collectors.toSet());
     }
     
     public int getChance()

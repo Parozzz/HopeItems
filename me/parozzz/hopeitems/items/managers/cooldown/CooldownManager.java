@@ -13,9 +13,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import me.parozzz.hopeitems.utilities.Utils;
-import me.parozzz.hopeitems.utilities.classes.SimpleMapList;
-import org.bukkit.Bukkit;
+import me.parozzz.reflex.classes.SimpleMapList;
+import me.parozzz.reflex.utilities.Util;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
@@ -34,7 +33,7 @@ public class CooldownManager
         cooldownMap = new HashMap<>();
         
         defaultCooldown = path.getLong("default") * 1000;
-        final String message = Utils.color(path.getString("message"));
+        final String message = Util.cc(path.getString("message"));
         
         permissionCooldowns = new LinkedHashMap<>();
         permissionCooldowns.putAll(new SimpleMapList(path.getMapList("permissions")).getConvertedValues(Function.identity(), str -> Long.valueOf(str) * 1000));
@@ -50,7 +49,7 @@ public class CooldownManager
                     return false;
                 }
 
-                p.sendMessage(message.replace("{time}", Objects.toString(cool.getRemaining() / 1000)));
+                p.sendMessage(message.replace("{time}", Util.longToTime(cool.getRemaining() / 1000)));
                 return true;
             }).orElseGet(() -> 
             {

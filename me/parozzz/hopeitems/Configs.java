@@ -5,30 +5,36 @@
  */
 package me.parozzz.hopeitems;
 
+import java.io.File;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import me.parozzz.hopeitems.ItemsCommand.CommandEnum;
 import me.parozzz.hopeitems.ItemsCommand.CommandMessageEnum;
+import me.parozzz.hopeitems.items.CustomItemUtil;
+import me.parozzz.hopeitems.items.ItemCollection;
 import me.parozzz.hopeitems.items.managers.actions.ActionType;
 import me.parozzz.hopeitems.items.ItemInfo;
 import me.parozzz.hopeitems.items.ItemInfo.When;
-import me.parozzz.hopeitems.items.ItemUtils;
+import me.parozzz.hopeitems.items.ItemRegistry;
 import me.parozzz.hopeitems.items.managers.conditions.ConditionType;
 import me.parozzz.hopeitems.items.managers.cooldown.CooldownManager;
 import me.parozzz.hopeitems.items.managers.explosive.ExplosiveManager;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyManager;
 import me.parozzz.hopeitems.items.managers.mobs.MobManager;
 import me.parozzz.hopeitems.shop.Shop.ShopMessage;
-import me.parozzz.hopeitems.utilities.Debug;
-import me.parozzz.hopeitems.utilities.MCVersion;
-import me.parozzz.hopeitems.utilities.Utils;
-import me.parozzz.hopeitems.utilities.classes.ComplexMapList;
-import me.parozzz.hopeitems.utilities.classes.SimpleMapList;
+import me.parozzz.reflex.Debug;
+import me.parozzz.reflex.MCVersion;
+import me.parozzz.reflex.classes.ComplexMapList;
+import me.parozzz.reflex.classes.SimpleMapList;
+import me.parozzz.reflex.utilities.ItemUtil;
+import me.parozzz.reflex.utilities.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -63,71 +69,38 @@ public class Configs
         
         ConfigurationSection cmPath=c.getConfigurationSection("CommandMessages");
         
-        cmPath.getConfigurationSection("Help").getValues(false).forEach((s,o) -> helpMessages.put(CommandEnum.valueOf(s.toUpperCase()), Utils.color((String)o)));
-        cmPath.getConfigurationSection("Others").getValues(false).forEach((s,o) -> otherMessages.put(CommandMessageEnum.valueOf(s.toUpperCase()), Utils.color((String)o)));
+        cmPath.getConfigurationSection("Help").getValues(false).forEach((s,o) -> helpMessages.put(CommandEnum.valueOf(s.toUpperCase()), Util.cc((String)o)));
+        cmPath.getConfigurationSection("Others").getValues(false).forEach((s,o) -> otherMessages.put(CommandMessageEnum.valueOf(s.toUpperCase()), Util.cc((String)o)));
         
-        ConfigurationSection mPath=c.getConfigurationSection("Messages");
+        ConfigurationSection mPath = c.getConfigurationSection("Messages");
         
-        mPath.getConfigurationSection("Shop").getValues(false).forEach((s, o) -> shopMessages.put(ShopMessage.valueOf(s.toUpperCase()), Utils.color((String)o)));
+        mPath.getConfigurationSection("Shop").getValues(false).forEach((s, o) -> shopMessages.put(ShopMessage.valueOf(s.toUpperCase()), Util.cc((String)o)));
     }
     
     private static final Map<String, ItemInfo> items=new HashMap<>();
-    protected static void initItems(final FileConfiguration c, final boolean reload)
+    protected static void loadItems(final File[] files, final boolean reload)
     {
         items.clear();
-        c.getKeys(false).stream().map(c::getConfigurationSection).forEach(nPath -> 
+        Stream.of(files).forEach(file -> 
         {
-            String name=nPath.getName();
-            ItemStack item=ItemUtils.addCustomTag(Utils.getItemByPath(nPath.getConfigurationSection("Item")), name);
+            String id = file.getName().replace(".yml", "");
             
-            ItemInfo info=new ItemInfo(name, item);
+            FileConfiguration config = Util.loadUTF(file);
             
-            info.removeOnUse=nPath.getBoolean("removeOnUse", false);
-            Optional.ofNullable(nPath.getConfigurationSection("Cooldown")).map(CooldownManager::new).ifPresent(info::setCooldown);
-            nPath.getStringList("when").stream().map(String::toUpperCase).map(When::valueOf).forEach(info::addWhen);
-            Optional.ofNullable(nPath.getConfigurationSection("Condition")).ifPresent(cPath -> 
-            {
-                cPath.getValues(false).forEach((condition, list) -> 
-                {
-                    ConditionType ct=Debug.validateEnum(condition, ConditionType.class);
-                    
-                    List<String[]> cList=((List<Map<?, ?>>)list).stream()
-                            .map(Map::entrySet)
-                            .flatMap(Set::stream)
-                            .map(e -> new String[] { e.getKey().toString().toLowerCase() , e.getValue().toString() })
-                            .collect(Collectors.toList());
-                    
-                    info.addConditionManager(ct.getConditionManager(new ComplexMapList((List<Map<?, ?>>)list)));
-                });
-            });
-            
-            Optional.ofNullable(nPath.getConfigurationSection("Action")).ifPresent(aPath -> 
-            {
-                aPath.getValues(false).forEach((action, list) -> 
-                {
-                    ActionType at=Debug.validateEnum(action, ActionType.class);
-                    info.addActionManager(at.getActionManager(new SimpleMapList((List<Map<? , ?>>)list)));
-                });
-            });
-            
-            Optional.ofNullable(nPath.getConfigurationSection("Mob")).ifPresent(mPath -> info.setMobManager(new MobManager(info, mPath)));
-            Optional.ofNullable(nPath.getConfigurationSection("Explosive")).ifPresent(ePath -> info.setExplosiveManager(new ExplosiveManager(ePath)));
-            Optional.ofNullable(nPath.getConfigurationSection("Lucky")).ifPresent(lPath -> info.setLuckyManager(new LuckyManager(lPath)));
-            items.put(name.toLowerCase(), info);
-            
-            Optional.ofNullable(nPath.getConfigurationSection("Crafting")).filter(path -> !reload).ifPresent(cPath -> 
+            ItemStack item = ItemUtil.getItemByPath(config.getConfigurationSection("Item"));
+            Optional.ofNullable(config.getConfigurationSection("Crafting")).filter(path -> !reload).ifPresent(path -> 
             {
                 Recipe r;
-                switch(Debug.validateEnum(cPath.getString("type"), RecipeType.class))
+                switch(Debug.validateEnum(path.getString("type"), RecipeType.class))
                 {
                     case SHAPED:
-                        r= MCVersion.V1_12.isHigher() ? 
-                                new ShapedRecipe(new NamespacedKey(JavaPlugin.getProvidingPlugin(Configs.class), name), item) : 
+                        r = MCVersion.V1_12.isHigher() ? 
+                                new ShapedRecipe(new NamespacedKey(JavaPlugin.getProvidingPlugin(Configs.class), id), item) : 
                                 new ShapedRecipe(item);
                         
-                        ((ShapedRecipe)r).shape(cPath.getStringList("shaped").stream().map(String::toUpperCase).toArray(String[]::new));
+                        ((ShapedRecipe)r).shape(path.getStringList("shaped").stream().map(String::toUpperCase).toArray(String[]::new));
                         
-                        cPath.getConfigurationSection("material").getValues(false).forEach((s, o) -> 
+                        path.getConfigurationSection("material").getValues(false).forEach((s, o) -> 
                         {
                             String[] itemData=o.toString().split(":");
                             ((ShapedRecipe)r).setIngredient(s.toUpperCase().charAt(0), new ItemStack(Material.valueOf(itemData[0].toUpperCase()), 1, Byte.valueOf(itemData[1])).getData());
@@ -135,10 +108,10 @@ public class Configs
                         break;
                     case SHAPELESS:
                         r=MCVersion.V1_12.isHigher() ? 
-                                new ShapelessRecipe(new NamespacedKey(JavaPlugin.getProvidingPlugin(Configs.class), name), item) : 
+                                new ShapelessRecipe(new NamespacedKey(JavaPlugin.getProvidingPlugin(Configs.class), id), item) : 
                                 new ShapelessRecipe(item);
                         
-                        cPath.getStringList("material").forEach(str -> 
+                        path.getStringList("material").forEach(str -> 
                         {
                             String[] itemData=str.split(":");
                             
@@ -149,7 +122,7 @@ public class Configs
                         });
                         break;
                     case FURNACE:
-                        String[] itemData=cPath.getString("source").split(":");
+                        String[] itemData = path.getString("source").split(":");
                         
                         ItemStack source=new ItemStack(Material.valueOf(itemData[0].toUpperCase()), 1, Byte.valueOf(itemData[1]));
                         r=new FurnaceRecipe(item, source.getData());
@@ -159,16 +132,45 @@ public class Configs
                 }
                 Bukkit.addRecipe(r);
             });
+            
+            ItemCollection collection = new ItemCollection(id, item);
+            Optional.ofNullable(config.getConfigurationSection("Cooldown")).map(CooldownManager::new).ifPresent(collection::setCooldown);
+            
+            Set<When> allWhens = EnumSet.noneOf(When.class);
+            config.getKeys(false).stream().filter(key -> !Util.or(key, "Item", "Crafting", "Cooldown")).map(config::getConfigurationSection).forEach(path -> 
+            {
+                String pathName = path.getName();
+                Set<When> whens = (pathName.equalsIgnoreCase("all") ? Stream.of(When.values()) :Stream.of(pathName.split(",")).map(str -> Debug.validateEnum(str, When.class))).collect(Collectors.toSet());
+                allWhens.addAll(whens);
+                
+                ItemInfo info = new ItemInfo(collection, whens);
+                whens.forEach(w -> collection.setItemInfo(w, info));
+                
+                info.removeOnUse = path.getBoolean("removeOnUse", false);
+                Optional.ofNullable(path.getConfigurationSection("Condition")).ifPresent(cPath -> 
+                {
+                    cPath.getValues(false).forEach((condition, list) -> 
+                    {
+                        info.addConditionManager(Debug.validateEnum(condition, ConditionType.class).getConditionManager(new ComplexMapList((List<Map<?, ?>>)list)));
+                    });
+                });
+
+                Optional.ofNullable(path.getConfigurationSection("Action")).ifPresent(aPath -> 
+                {
+                    aPath.getValues(false).forEach((action, list) -> 
+                    {
+                        info.addActionManager(Debug.validateEnum(action, ActionType.class).getActionManager(new SimpleMapList((List<Map<? , ?>>)list)));
+                    });
+                });
+
+                Optional.ofNullable(path.getConfigurationSection("Mob")).ifPresent(mPath -> info.setMobManager(new MobManager(info, mPath)));
+                Optional.ofNullable(path.getConfigurationSection("Explosive")).ifPresent(ePath -> info.setExplosiveManager(new ExplosiveManager(ePath)));
+                Optional.ofNullable(path.getConfigurationSection("Lucky")).ifPresent(lPath -> info.setLuckyManager(new LuckyManager(lPath)));
+                
+            });
+            
+            CustomItemUtil.addCustomTag(item, id, allWhens);
+            ItemRegistry.addCollection(collection);
         });
-    }
-    
-    public static ItemInfo getItemInfo(final String name)
-    {
-        return items.get(name.toLowerCase());
-    }
-    
-    public static Set<String> getItemNames()
-    {
-        return items.keySet();
     }
 }

@@ -33,33 +33,33 @@ public class BlockManager
         return Optional.ofNullable(instance).orElseGet(() -> instance=new BlockManager());
     }
     
-    private final Map<Location, ItemInfo> blocks; 
+    private final Map<Location, ItemCollection> blocks; 
     private BlockManager()
     {
-        blocks=new HashMap<>();
+        blocks = new HashMap<>();
     }
     
-    public ItemInfo getBlockInfo(final Location l)
+    public ItemCollection getBlockInfo(final Location l)
     {
         return blocks.get(l);
     }
     
-    public void addBlock(final Block b, final ItemInfo info)
+    public void addBlock(final Block b, final ItemCollection collection)
     {
-        blocks.put(b.getLocation(), info);
+        blocks.put(b.getLocation(), collection);
     }
     
-    public void addBlock(final Location l, final ItemInfo info)
+    public void addBlock(final Location l, final ItemCollection collection)
     {
-        blocks.put(l, info);
+        blocks.put(l, collection);
     }
     
-    public ItemInfo removeBlock(final Block b)
+    public ItemCollection removeBlock(final Block b)
     {
         return blocks.remove(b.getLocation());
     }
     
-    public ItemInfo removeBlock(final Location l)
+    public ItemCollection removeBlock(final Location l)
     {
         return blocks.remove(l);
     }
@@ -69,7 +69,7 @@ public class BlockManager
         data.set("blocks", blocks.entrySet().stream().map(e -> 
         {
             Map<String, Location> map = new LinkedHashMap<>();
-            map.put(e.getValue().getName(), e.getKey());
+            map.put(e.getValue().getId(), e.getKey());
             return map;
         }).collect(Collectors.toList()));
     }
@@ -86,9 +86,9 @@ public class BlockManager
         data.getMapList("blocks").stream().map(map -> (Map<String, Location>)map).map(Map::entrySet).flatMap(Set::stream).forEach(e -> 
         {
             Location l = e.getValue();
-            Optional.ofNullable(Configs.getItemInfo(e.getKey())).map(info -> 
+            Optional.ofNullable(ItemRegistry.getCollection(e.getKey())).map(collection -> 
             {
-                addBlock(l, info);
+                addBlock(l, collection);
                 return l;
             }).orElseGet(() -> 
             {

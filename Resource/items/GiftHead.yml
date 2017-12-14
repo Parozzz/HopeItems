@@ -1,0 +1,64 @@
+Item:
+  id: skull_item
+  data: 3
+  url: "http://textures.minecraft.net/texture/9bca9f83ed01db77ffef311bb18bc232cb629d455c544ccb4c45579d0f3"
+  name: "&6Gift &cHead"
+  lore:
+    - "&7Click this once placed to received a random surprise!"
+    
+Cooldown:
+  default: 1200 #Default time without any perms
+  message: "&cYou are on cooldown. &fWait &l&f{time} &fsecs" #Message on cooldown. Set to "" to disable
+  permissions: 
+    - explodingdiamond.vip.cooldown: 900 #permission: timeToWait
+    - explodingdiamond.vip+.cooldown: 700
+    - explodingdiamond.vip++.cooldown: 600
+      
+blockinteract:
+  removeOnUse: false
+  Lucky:
+    animation: gui
+    Gui:
+      title: "&cRandom &dRewards"
+      rows: 6
+      slot: 45,36,27,18,10,2,3,4,5,6,16,26,35,43,51,50,49,40,31
+      winSlot: 31
+      roll: 40
+      Items:
+        22,13:
+          id: stained_glass_pane
+          data: 13
+          name: '&7&lVVV'
+        30,29:
+          id: stained_glass_pane
+          data: 13
+          name: '&7&l-->'
+        32,33:
+          id: stained_glass_pane
+          data: 13
+          name: '&7&l<--'
+    Rewards:
+      First:
+        items:
+          - mobEgg
+        Preview:
+          id: monster_egg
+          data: creeper
+          name: "&2Cegg"
+        chance: 30
+      Second:
+        items:
+          - customPotion
+        Preview:
+          id: potion
+          name: "&7Potion"
+        chance: 15
+      Third:
+        items:
+          - customPotion
+        Preview:
+          id: skull_item
+          data: 3
+          url: "http://textures.minecraft.net/texture/9bca9f83ed01db77ffef311bb18bc232cb629d455c544ccb4c45579d0f3"
+          name: "&7Gift"
+        chance: 5

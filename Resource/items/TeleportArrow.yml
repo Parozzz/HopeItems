@@ -1,0 +1,13 @@
+Item:
+  id: ender_pearl
+  name: "&cScammy &dEnderPearl"
+  lore:
+    - "&7Is infinite, but does it worth it?"
+ 
+projectile:
+  removeOnUse: false
+  Action:
+    worldEffect:
+      - particle: name:spell_mob,effect:static,quantity:100
+    playerEffect:
+      - teleport: true

@@ -5,8 +5,6 @@
  */
 package me.parozzz.hopeitems.items.managers.actions;
 
-import me.parozzz.hopeitems.items.managers.conditions.ConditionManager;
-import me.parozzz.hopeitems.items.managers.actions.ActionType;
 import java.util.function.BiConsumer;
 
 /**

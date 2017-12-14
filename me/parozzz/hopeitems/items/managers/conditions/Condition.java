@@ -6,7 +6,6 @@
 package me.parozzz.hopeitems.items.managers.conditions;
 
 import java.util.function.Predicate;
-import me.parozzz.hopeitems.utilities.Utils;
 import org.bukkit.command.CommandSender;
 
 /**

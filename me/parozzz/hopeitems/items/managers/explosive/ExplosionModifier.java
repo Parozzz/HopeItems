@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import me.parozzz.hopeitems.items.managers.ManagerUtils;
-import me.parozzz.hopeitems.utilities.classes.MapArray;
+import me.parozzz.reflex.classes.MapArray;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
