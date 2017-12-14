@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 import me.parozzz.hopeitems.items.ItemInfo.When;
 import me.parozzz.reflex.NMS.itemStack.ItemNBT;
 import me.parozzz.reflex.NMS.nbt.NBTCompound;
+import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 
 /**
@@ -23,21 +24,15 @@ public class HItem
     private final ItemStack item;
     public HItem(final ItemStack item)
     {
-        this.item=item;
+        this.item = item;
         
-        nbt=new ItemNBT(item);
-        tag=nbt.getTag();
+        nbt = new ItemNBT(item);
+        tag = nbt.getTag();
     }
     
     public boolean isValid()
     {
         return tag.hasKey(CustomItemUtil.CUSTOM_NBT);
-    }
-    
-    public boolean hasAnyWhen(final When... whens)
-    {
-        NBTCompound whenCompound = tag.getCompound(CustomItemUtil.CUSTOM_NBT).getCompound(CustomItemUtil.WHENS);
-        return Stream.of(whens).anyMatch(w -> whenCompound.hasKey(w.name()));
     }
     
     public String getStringId()

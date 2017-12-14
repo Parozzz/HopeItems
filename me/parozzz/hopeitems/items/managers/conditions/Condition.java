@@ -5,6 +5,7 @@
  */
 package me.parozzz.hopeitems.items.managers.conditions;
 
+import java.util.Optional;
 import java.util.function.Predicate;
 import org.bukkit.command.CommandSender;
 
@@ -18,8 +19,8 @@ public class Condition<T>
     private final String message;
     public Condition(final Predicate<T> predicate, final String message)
     {
-        this.message=message;
-        this.predicate=predicate;
+        this.message = message;
+        this.predicate = predicate;
     }
     
     public boolean test(final T t)
@@ -31,7 +32,7 @@ public class Condition<T>
     {
         if(!predicate.test(t))
         {
-            cs.sendMessage(message);
+            Optional.ofNullable(message).ifPresent(cs::sendMessage);
             return false;
         }
         return true;

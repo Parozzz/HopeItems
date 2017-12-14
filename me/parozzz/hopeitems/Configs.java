@@ -136,12 +136,12 @@ public class Configs
             ItemCollection collection = new ItemCollection(id, item);
             Optional.ofNullable(config.getConfigurationSection("Cooldown")).map(CooldownManager::new).ifPresent(collection::setCooldown);
             
-            Set<When> allWhens = EnumSet.noneOf(When.class);
             config.getKeys(false).stream().filter(key -> !Util.or(key, "Item", "Crafting", "Cooldown")).map(config::getConfigurationSection).forEach(path -> 
             {
                 String pathName = path.getName();
-                Set<When> whens = (pathName.equalsIgnoreCase("all") ? Stream.of(When.values()) :Stream.of(pathName.split(",")).map(str -> Debug.validateEnum(str, When.class))).collect(Collectors.toSet());
-                allWhens.addAll(whens);
+                Set<When> whens = pathName.equalsIgnoreCase("all") ? 
+                        EnumSet.allOf(When.class) : 
+                        Stream.of(pathName.split(",")).map(str -> Debug.validateEnum(str, When.class)).collect(Collectors.toSet());
                 
                 ItemInfo info = new ItemInfo(collection, whens);
                 whens.forEach(w -> collection.setItemInfo(w, info));
@@ -169,7 +169,7 @@ public class Configs
                 
             });
             
-            CustomItemUtil.addCustomTag(item, id, allWhens);
+            CustomItemUtil.addCustomTag(item, id);
             ItemRegistry.addCollection(collection);
         });
     }

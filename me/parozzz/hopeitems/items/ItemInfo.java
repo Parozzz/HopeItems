@@ -32,7 +32,8 @@ public class ItemInfo
 {
     public enum When
     {
-        INTERACT, CONSUME, SPLASH, LINGERING, DISPENSE, PROJECTILE,
+        LEFTINTERACT, RIGHTINTERACT, 
+        CONSUME, SPLASH, LINGERING, DISPENSE, PROJECTILE,
         ARMOREQUIP, ARMORUNEQUIP,
         ATTACKSELF, ATTACKOTHER,
         DROP, DROPONGROUND,
@@ -105,13 +106,16 @@ public class ItemInfo
         luckyManager=lm;
     }
     
-    public void executeWithItem(final Location l, final Player p, final ItemStack item)
+    public boolean executeWithItem(final Location l, final Player p, final ItemStack item)
     {
         if(execute(l, p, true) && removeOnUse)
         {
             ItemUtil.decreaseItemStack(item, p.getInventory());
             p.updateInventory();
+            return true;
         }
+        
+        return false;
     }
     
     public boolean execute(final Location l, final Dispenser d)

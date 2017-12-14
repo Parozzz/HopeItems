@@ -3,7 +3,15 @@ Item:
   name: "&cScammy &dEnderPearl"
   lore:
     - "&7Is infinite, but does it worth it?"
+    - "&7Left click to learn more"
     
+leftinteract:
+  removeOnUse: false
+  Action:
+    player:
+      - message: "&7This enderpearl will reveal your location in chat"
+      - message: "&7But beware! It will be disguised as you!"
+      
 projectile:
   removeOnUse: false
   Action:

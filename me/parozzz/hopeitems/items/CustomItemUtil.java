@@ -20,22 +20,15 @@ public class CustomItemUtil
     protected static final String CUSTOM_NBT = "HopeItem";
     
     protected static final String ID = "Id";
-    protected static final String WHENS = "Whens";
     
-    public static void addCustomTag(final ItemStack item, final String name, final Set<When> whens)
+    public static void addCustomTag(final ItemStack item, final String name)
     {
         ItemNBT nbt = new ItemNBT(item);
 
-        NBTCompound tag = nbt.getTag();
-        
         NBTCompound customCompound = new NBTCompound();
         customCompound.setString(ID, name);
+        nbt.getTag().setTag(CUSTOM_NBT, customCompound);
         
-        NBTCompound whenCompound = new NBTCompound();
-        whens.forEach(w -> whenCompound.setBoolean(w.name(), true));
-        customCompound.setTag(WHENS, whenCompound);
-        
-        tag.setTag(CUSTOM_NBT, customCompound);
         item.setItemMeta(nbt.getBukkitItem().getItemMeta());
     }
 }

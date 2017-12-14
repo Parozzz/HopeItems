@@ -8,7 +8,6 @@ package me.parozzz.hopeitems.items.managers.cooldown;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -36,7 +35,7 @@ public class CooldownManager
         final String message = Util.cc(path.getString("message"));
         
         permissionCooldowns = new LinkedHashMap<>();
-        permissionCooldowns.putAll(new SimpleMapList(path.getMapList("permissions")).getConvertedValues(Function.identity(), str -> Long.valueOf(str) * 1000));
+        permissionCooldowns.putAll(new SimpleMapList(path.getMapList("permissions")).getConvertedValues(Function.identity(), str -> Long.valueOf(str) * 1000, 0));
         
         hasCooldown = p -> 
         {

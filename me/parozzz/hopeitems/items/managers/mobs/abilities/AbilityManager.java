@@ -33,10 +33,10 @@ public class AbilityManager
         resistArrow=path.getBoolean("resistArrow", false);
         
         new ComplexMapList(path.getMapList("direct")).getMapArrays()
-                .forEach((type, map) -> direct = direct.andThen(Debug.validateEnum(type, AbilityType.class).getConsumer(map)));
+                .forEach((type, list) -> list.forEach(map -> direct = direct.andThen(Debug.validateEnum(type, AbilityType.class).getConsumer(map))));
         
         new ComplexMapList(path.getMapList("passive")).getMapArrays()
-                .forEach((type, map) -> passive = passive.andThen(Debug.validateEnum(type, AbilityType.class).getConsumer(map)));
+                .forEach((type, list) -> list.forEach(map -> passive = passive.andThen(Debug.validateEnum(type, AbilityType.class).getConsumer(map))));
     }
     
     public MobManager getMobManager()

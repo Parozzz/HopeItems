@@ -58,20 +58,24 @@ public class ExplosiveManager
     private final BiConsumer<Entity, ExplosiveMetadata> option;
     
     private final int modifierRange;
-    private final BiConsumer<EntityExplodeEvent, Set<LivingEntity>> modifier;
+    private BiConsumer<EntityExplodeEvent, Set<LivingEntity>> modifier;
     public ExplosiveManager(final ConfigurationSection path)
     {
         try { et=ExplosiveType.valueOf(path.getString("type").toUpperCase()); }
         catch(final IllegalArgumentException t) { throw new IllegalArgumentException("An explosive type named "+path.getString("type")+" does not exist"); }
         
-        option=new SimpleMapList(path.getMapList("option")).getValues().entrySet().stream()
-                .map(e -> Debug.validateEnum(e.getKey(), ExplosiveOption.class).getConsumer(e.getValue()))
+        option = new SimpleMapList(path.getMapList("option")).getValues().entrySet().stream()
+                .map(e -> Debug.validateEnum(e.getKey(), ExplosiveOption.class).getConsumer(e.getValue().get(0)))
                 .reduce(BiConsumer::andThen).orElse((ent, meta) -> {});
         
-        modifierRange=path.getInt("modifierRange", -1);
-        modifier = new ComplexMapList(path.getMapList("modifier")).getMapArrays().entrySet().stream()
-                .map(e -> Debug.validateEnum(e.getKey(), ExplosionModifier.class).getConsumer(e.getValue()))
-                .reduce(BiConsumer::andThen).orElse((e, set) -> {});
+        modifierRange = path.getInt("modifierRange", -1);
+        
+        modifier = (e, set) -> {};
+        new ComplexMapList(path.getMapList("modifier")).getMapArrays().entrySet().forEach(e -> 
+        {
+            ExplosionModifier modifierEnum = Debug.validateEnum(e.getKey(), ExplosionModifier.class);
+            e.getValue().forEach(map -> modifier = modifier.andThen(modifierEnum.getConsumer(map)));
+        });
     }
     
     public Entity spawn(final Location l, final ProjectileSource ps)

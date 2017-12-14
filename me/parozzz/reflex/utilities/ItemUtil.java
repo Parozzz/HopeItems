@@ -21,6 +21,7 @@ import me.parozzz.reflex.NMS.itemStack.ItemAttributeModifier;
 import me.parozzz.reflex.NMS.itemStack.ItemNBT;
 import me.parozzz.reflex.NMS.nbt.NBTCompound;
 import me.parozzz.reflex.classes.ComplexMapList;
+import me.parozzz.reflex.classes.MapArray;
 import me.parozzz.reflex.classes.SimpleMapList;
 import me.parozzz.reflex.utilities.Util.ColorEnum;
 import org.bukkit.Color;
@@ -225,22 +226,23 @@ public class ItemUtil
         ItemNBT nbt=new ItemNBT(item);
         NBTCompound compound=nbt.getTag();
 
-        new SimpleMapList(path.getMapList("tag")).getValues().forEach((key, value) -> compound.setString(key, value));
+        new SimpleMapList(path.getMapList("tag")).getValues().forEach((key, value) -> compound.setString(key, value.get(0)));
         
-        new SimpleMapList(path.getMapList("adventure")).getValues().forEach((key, value) -> 
+        new SimpleMapList(path.getMapList("adventure")).getValues().forEach((key, list) -> 
         {
             AdventureTag tag = Debug.validateEnum(key, AdventureTag.class);
-            ItemNBT.setAdventureFlag(compound, tag, Stream.of(value.split(",")).map(str -> Debug.validateEnum(str, Material.class)).toArray(Material[]::new));
+            ItemNBT.setAdventureFlag(compound, tag, Stream.of(list.get(0).split(",")).map(str -> Debug.validateEnum(str, Material.class)).toArray(Material[]::new));
         });
         
         if(path.contains("Attribute"))
         {
             ItemAttributeModifier modifier=new ItemAttributeModifier();
-            new ComplexMapList(path.getMapList("Attribute")).getMapArrays().forEach((attr, map) -> 
+            new ComplexMapList(path.getMapList("Attribute")).getMapArrays().forEach((attr, list) -> 
             {
                 ItemAttributeModifier.ItemAttribute attribute=Debug.validateEnum(attr, ItemAttributeModifier.ItemAttribute.class);
-
-                double value=map.getValue("value", Double::valueOf);
+                
+                MapArray map = list.get(0);
+                double value = map.getValue("value", Double::valueOf);
                 ItemAttributeModifier.Operation op=ItemAttributeModifier.Operation.getById(map.getValue("operation", Integer::valueOf));
                 ItemAttributeModifier.AttributeSlot slot=Debug.validateEnum(Optional.ofNullable(map.getValue("slot", Function.identity())).orElse("MAINHAND"), ItemAttributeModifier.AttributeSlot.class);
 

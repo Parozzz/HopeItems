@@ -5,10 +5,11 @@
  */
 package me.parozzz.hopeitems.items.listener;
 
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
-import me.parozzz.hopeitems.Configs;
 import me.parozzz.hopeitems.items.BlockManager;
 import me.parozzz.hopeitems.items.HItem;
 import me.parozzz.hopeitems.items.ItemCollection;
@@ -68,7 +69,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  * @author Paros
  */
 public class ItemListener implements Listener
-{
+{   
     @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
     private void onItemInteract(final PlayerInteractEvent e)
     {
@@ -80,6 +81,11 @@ public class ItemListener implements Listener
                 .filter(info -> info.execute(e.getClickedBlock().getLocation().add(0.5, 1, 0.5), e.getPlayer(), true) && info.removeOnUse)
                 .ifPresent(info -> BlockManager.getInstance().removeBlock(e.getClickedBlock()));
         
+        if(e.getAction() == Action.PHYSICAL)
+        {
+            return;
+        }
+        
         Optional.ofNullable(e.getItem()).ifPresent(item -> 
         {
             if(Util.or(e.getAction(), Action.LEFT_CLICK_BLOCK, Action.RIGHT_CLICK_BLOCK) && e.isCancelled())
@@ -87,19 +93,18 @@ public class ItemListener implements Listener
                 return;
             }
             
-            getOptional(item).ifPresent(collection -> 
+            When when = Util.or(e.getAction(), Action.LEFT_CLICK_AIR , Action.LEFT_CLICK_BLOCK) ? When.LEFTINTERACT : When.RIGHTINTERACT;
+            
+            getOptional(item, when).ifPresent(collection -> 
             {
-                if(collection.hasWhen(When.INTERACT))
-                {
-                    e.setCancelled(true);
+                e.setCancelled(true);
 
-                    final Location l = Optional.ofNullable(e.getClickedBlock())
-                            .map(Block::getLocation)
-                            .map(temp -> temp.add(0.5, 1, 0.5))
-                            .orElseGet(() -> e.getPlayer().getLocation());
-                    
-                    collection.getItemInfo(When.INTERACT).executeWithItem(l, e.getPlayer(), item);
-                }
+                final Location l = Optional.ofNullable(e.getClickedBlock())
+                        .map(Block::getLocation)
+                        .map(temp -> temp.add(0.5, 1, 0.5))
+                        .orElseGet(() -> e.getPlayer().getLocation());
+                
+                e.setCancelled(collection.getItemInfo(when).executeWithItem(l, e.getPlayer(), item));
             });
         });
     }
@@ -133,8 +138,7 @@ public class ItemListener implements Listener
     {
         getOptional(e.getItem(), When.CONSUME).ifPresent(collection -> 
         {
-            e.setCancelled(true);
-            collection.getItemInfo(When.CONSUME).executeWithItem(e.getPlayer().getLocation(), e.getPlayer(), e.getItem());
+            e.setCancelled(collection.getItemInfo(When.CONSUME).executeWithItem(e.getPlayer().getLocation(), e.getPlayer(), e.getItem()));
         });
     }
     
@@ -472,8 +476,17 @@ public class ItemListener implements Listener
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
     private void onBlockPlace(final BlockPlaceEvent e)
     {
-        getOptional(e.getItemInHand(), When.BLOCKINTERACT, When.BLOCKSTEP, When.BLOCKDESTROY)
-                .ifPresent(info -> BlockManager.getInstance().addBlock(e.getBlockPlaced(), info));
+        getOptional(e.getItemInHand()).ifPresent(collection -> 
+        {
+            if(collection.hasAnyWhen(When.BLOCKINTERACT, When.BLOCKSTEP, When.BLOCKDESTROY))
+            {
+                BlockManager.getInstance().addBlock(e.getBlockPlaced(), collection);
+            }
+            else
+            {
+                e.setCancelled(true);
+            } 
+        });
     }
     
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
@@ -598,10 +611,9 @@ public class ItemListener implements Listener
         return Optional.ofNullable(item)
                 .map(HItem::new)
                 .filter(HItem::isValid)
-                .filter(hitem -> hitem.hasAnyWhen(w))
                 .map(HItem::getStringId)
                 .map(ItemRegistry::getCollection)
-                .filter(collection -> collection.hasAnyWhen(w))
+                .filter(collection -> w.length == 0 || collection.hasAnyWhen(w))
                 .filter(Objects::nonNull);
     }
 }

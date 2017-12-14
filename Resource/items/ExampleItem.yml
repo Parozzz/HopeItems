@@ -1,21 +1,5 @@
-
-#when:
-#  - interact
-#  - consume
-#  - splash
-#  - lingering
-#  - dispense
-#  - projectile
-#  - attackself
-#  - attackother
-#  - drop
-#  - dropOnGround
-#  - blockInteract
-#  - blockStep
-#  - blockDestroy
-  
 Item:
-  id: torch
+  id: seeds
   name: "&6HopeItems &f&lExample &fItem"
   lore:
     - "&7This is an example item from &6HoepItems"

@@ -11,6 +11,7 @@ import java.util.function.Function;
 import me.parozzz.hopeitems.Dependency;
 import me.parozzz.hopeitems.items.managers.ManagerUtils;
 import me.parozzz.reflex.classes.ComplexMapList;
+import me.parozzz.reflex.classes.MapArray;
 import me.parozzz.reflex.utilities.Util;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -25,12 +26,14 @@ public enum ConditionType
     PLAYER(true){
         private final boolean tryE=true;
         @Override
-        public ConditionManager getConditionManager(final ComplexMapList list)
+        public ConditionManager getConditionManager(final ComplexMapList mapList)
         {
             ConditionManager<Player> player=new ConditionManager<>(this);
-            list.getMapArrays().forEach((key, map) -> 
+            mapList.getMapArrays().forEach((key, list) -> 
             {
-                String message = map.getValue("message", Util::cc);
+                MapArray map = list.get(0);
+                
+                String message = map.hasKey("message") ? map.getValue("message", Util::cc) : null;
                 String value = map.getValue("value", Function.identity());
                 
                 switch(key)
@@ -74,12 +77,14 @@ public enum ConditionType
     },
     LOCATION(false){
         @Override
-        public ConditionManager getConditionManager(final ComplexMapList list)
+        public ConditionManager getConditionManager(final ComplexMapList mapList)
         {
             ConditionManager<Location> location=new ConditionManager<>(this);
-            list.getMapArrays().forEach((key, map) -> 
+            mapList.getMapArrays().forEach((key, list) -> 
             {
-                String message = map.getValue("message", Util::cc);
+                MapArray map = list.get(0);
+                
+                String message = map.hasKey("message") ? map.getValue("message", Util::cc) : null;
                 String value = map.getValue("value", Function.identity());
                 
                 switch(key)

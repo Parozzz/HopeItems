@@ -5,13 +5,13 @@
  */
 package me.parozzz.reflex.classes;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  *
@@ -19,25 +19,22 @@ import java.util.stream.Stream;
  */
 public class ComplexMapList 
 {
-    private final Map<String, MapArray> arrays;
+    private final Map<String, List<MapArray>> arrays;
     public ComplexMapList(final List<Map<?, ?>> list)
     {
-        arrays = list.stream()
-                .map(Map::entrySet)
-                .flatMap(Set::stream)
-                .collect(Collectors.toMap(e -> e.getKey().toString().toLowerCase(), e->
-                {
-                    String[] t =e.getValue().toString().split(",");
-                    return new MapArray(t);
-                }));
+        arrays = new HashMap<>();
+        list.stream().map(Map::entrySet).forEach(set -> 
+        {
+            set.forEach(e -> arrays.computeIfAbsent(e.getKey().toString().toLowerCase(), temp -> new ArrayList<>()).add(new MapArray(e.getValue().toString().split(","))));
+        });
     }
     
-    public MapArray getMapArray(final String key)
+    public List<MapArray> getMapArrays(final String key)
     {
         return arrays.get(key.toLowerCase());
     }
     
-    public Map<String, MapArray> getMapArrays()
+    public Map<String, List<MapArray>> getMapArrays()
     {
         return new HashMap<>(arrays);
     }
