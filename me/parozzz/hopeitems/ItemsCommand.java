@@ -36,7 +36,7 @@ public class ItemsCommand implements CommandExecutor
 {
     public enum CommandMessageEnum
     {
-        WRONG_COMMAND, WRONG_ITEM, PLAYER_OFFLINE, ITEM_RECEIVED, ITEM_SENT, RELOADED, RELOAD_FAIL, SHOP_INEXISTENT;
+        WRONG_COMMAND, WRONG_ITEM, WRONG_WHEN, PLAYER_OFFLINE, ITEM_RECEIVED, ITEM_SENT, RELOADED, RELOAD_FAIL, SHOP_INEXISTENT;
         
         @Override
         public String toString()
@@ -188,8 +188,17 @@ public class ItemsCommand implements CommandExecutor
                     Optional.ofNullable(Bukkit.getPlayer(val[1])).map(p -> 
                     {
                         Optional.ofNullable(ItemRegistry.getCollection(val[2]))
-                                .map(collection -> collection.getItemInfo(When.NONE))
-                                .filter(Objects::nonNull)
+                                .flatMap(collection -> 
+                                {
+                                    When when;
+                                    try {
+                                        when = When.valueOf(val[3].toUpperCase());
+                                    } catch(final IllegalArgumentException ex) {
+                                        cs.sendMessage(CommandMessageEnum.WRONG_WHEN.toString());
+                                        return Optional.empty();
+                                    }
+                                    return Optional.ofNullable(collection.getItemInfo(when));
+                                })
                                 .map(info -> info.execute(p.getLocation(), p, val.length == 4 ? val[3].equalsIgnoreCase("-c") : false))
                                 .orElseGet(() -> 
                                 {

@@ -5,10 +5,8 @@
  */
 package me.parozzz.hopeitems.items.listener;
 
-import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 import me.parozzz.hopeitems.items.BlockManager;
 import me.parozzz.hopeitems.items.HItem;
@@ -21,6 +19,8 @@ import me.parozzz.reflex.Debug;
 import me.parozzz.reflex.MCVersion;
 import me.parozzz.reflex.events.armor.ArmorEquipEvent;
 import me.parozzz.reflex.events.armor.ArmorUnequipEvent;
+import me.parozzz.reflex.events.offhand.OffHandEquipEvent;
+import me.parozzz.reflex.events.offhand.OffHandUnequipEvent;
 import me.parozzz.reflex.utilities.EntityUtil;
 import me.parozzz.reflex.utilities.ItemUtil;
 import me.parozzz.reflex.utilities.TaskUtil;

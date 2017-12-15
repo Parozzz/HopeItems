@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package me.parozzz.reflex.events;
+package me.parozzz.reflex.events.armor;
 
 import java.util.EnumMap;
 import java.util.HashMap;

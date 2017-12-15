@@ -23,7 +23,6 @@ import me.parozzz.reflex.ReflexAPI;
 import me.parozzz.reflex.ReflexAPI.Property;
 import me.parozzz.reflex.utilities.Util;
 import org.bukkit.Bukkit;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
@@ -154,7 +153,7 @@ public class HopeItems extends JavaPlugin
     {
         Logger l=Logger.getLogger(HopeItems.class.getSimpleName());
         
-        ReflexAPI.enable(Property.ENTITYPLAYER_LISTENER, Property.ARMOREVENTS_LISTENER);
+        ReflexAPI.enable(Property.ENTITYPLAYER_LISTENER, Property.ARMOREVENTS_LISTENER, Property.OFFHANDEVENTS_LISTENER);
         
         if(Dependency.setupEconomy())
         {
