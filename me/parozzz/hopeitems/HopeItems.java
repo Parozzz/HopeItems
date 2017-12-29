@@ -34,7 +34,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public class HopeItems extends JavaPlugin
 {
-    private File dataFile;
+    private final File dataFile = new File(this.getDataFolder(), "data.yml");
     @Override
     public void onEnable()
     {
@@ -59,7 +59,7 @@ public class HopeItems extends JavaPlugin
             ExplosiveManager.registerListener();
             LuckyManager.registerListener();
             
-            (dataFile = new File(this.getDataFolder(), "data.yml")).createNewFile();
+            dataFile.createNewFile();
             FileConfiguration data = YamlConfiguration.loadConfiguration(dataFile);
             BlockManager.getInstance().loadBlocks(data);
             MobManager.loadData(data);
@@ -119,7 +119,7 @@ public class HopeItems extends JavaPlugin
             return; 
         }
         
-        Stream.of("ExampleItem", "ExplodingDiamond", "GiftHead", "ScammyEnderpearl", "SpawnSnowball", "TeleportArrow", "ThorPot")
+        Stream.of("ExampleItem", "ExplodingDiamond", "GiftHead", "ScammyEnderpearl", "HelmetJump", "HastePick", "SpawnSnowball", "TeleportArrow", "ThorPot")
                 .forEach(defaultName -> this.saveResource("items/" + defaultName + ".yml", true));
         
                 

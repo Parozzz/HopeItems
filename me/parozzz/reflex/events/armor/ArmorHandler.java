@@ -294,7 +294,10 @@ public class ArmorHandler implements Listener
                     break;
             }
             
-            e.setCancelled(Util.callEvent(new ArmorUnequipEvent(e.getPlayer(), item, slot, Cause.BREAK)).isCancelled());
+            if(e.getItem().getDurability() + e.getDamage() >= e.getItem().getType().getMaxDurability())
+            {
+                e.setCancelled(Util.callEvent(new ArmorUnequipEvent(e.getPlayer(), item, slot, Cause.BREAK)).isCancelled());
+            }
             return;
         }
     }

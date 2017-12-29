@@ -98,7 +98,7 @@ public class Configs
                                 new ShapedRecipe(new NamespacedKey(JavaPlugin.getProvidingPlugin(Configs.class), id), item) : 
                                 new ShapedRecipe(item);
                         
-                        ((ShapedRecipe)r).shape(path.getStringList("shaped").stream().map(String::toUpperCase).toArray(String[]::new));
+                        ((ShapedRecipe)r).shape(path.getStringList("shape").stream().map(String::toUpperCase).toArray(String[]::new));
                         
                         path.getConfigurationSection("material").getValues(false).forEach((s, o) -> 
                         {
@@ -134,9 +134,11 @@ public class Configs
             });
             
             ItemCollection collection = new ItemCollection(id, item);
+            collection.setEnchantable(config.getBoolean("enchantable", true));
+            
             Optional.ofNullable(config.getConfigurationSection("Cooldown")).map(CooldownManager::new).ifPresent(collection::setCooldown);
             
-            config.getKeys(false).stream().filter(key -> !Util.or(key, "Item", "Crafting", "Cooldown")).map(config::getConfigurationSection).forEach(path -> 
+            config.getKeys(false).stream().filter(key -> !Util.or(key.toLowerCase(), "enchantable", "item", "crafting", "cooldown")).map(config::getConfigurationSection).forEach(path -> 
             {
                 String pathName = path.getName();
                 Set<When> whens = pathName.equalsIgnoreCase("all") ? 
@@ -144,6 +146,8 @@ public class Configs
                         Stream.of(pathName.split(",")).map(str -> Debug.validateEnum(str, When.class)).collect(Collectors.toSet());
                 
                 ItemInfo info = new ItemInfo(collection, whens);
+                Util.ifCheck(path.contains("chance"), () -> info.setChance(path.getDouble("chance")));
+                
                 whens.forEach(w -> collection.setItemInfo(w, info));
                 
                 info.removeOnUse = path.getBoolean("removeOnUse", false);

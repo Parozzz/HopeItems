@@ -1,5 +1,5 @@
 name: HopeItems
-version: V2_3.0
+version: V2_3.1
 author: Parozzz
 main: me.parozzz.hopeitems.HopeItems
 commands:
@@ -7,5 +7,5 @@ commands:
     aliases: [hpi]
     Usage: /items
     Description: Main Command
-softdepend: [Vault, WorldGuard]
+softdepend: [Multiverse-Core, Vault, WorldGuard]
 

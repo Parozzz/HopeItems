@@ -19,8 +19,6 @@ import me.parozzz.reflex.Debug;
 import me.parozzz.reflex.MCVersion;
 import me.parozzz.reflex.events.armor.ArmorEquipEvent;
 import me.parozzz.reflex.events.armor.ArmorUnequipEvent;
-import me.parozzz.reflex.events.offhand.OffHandEquipEvent;
-import me.parozzz.reflex.events.offhand.OffHandUnequipEvent;
 import me.parozzz.reflex.utilities.EntityUtil;
 import me.parozzz.reflex.utilities.ItemUtil;
 import me.parozzz.reflex.utilities.TaskUtil;
@@ -46,6 +44,8 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.enchantment.EnchantItemEvent;
+import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
@@ -112,19 +112,15 @@ public class ItemListener implements Listener
     @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
     private void onArmorEquip(final ArmorEquipEvent e)
     {
-        getOptional(e.getItem(), When.ARMOREQUIP).ifPresent(collection -> 
-        {
-            e.setCancelled(!collection.getItemInfo(When.ARMOREQUIP).execute(e.getPlayer().getLocation(), e.getPlayer(), true));
-        });
+        getOptional(e.getItem(), When.ARMOREQUIP)
+                .ifPresent(collection -> e.setCancelled(!collection.getItemInfo(When.ARMOREQUIP).execute(e.getPlayer().getLocation(), e.getPlayer(), true)));
     }
     
     @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
     private void onArmorUnequip(final ArmorUnequipEvent e)
     {
-        getOptional(e.getItem(), When.ARMORUNEQUIP).ifPresent(collection -> 
-        {
-            e.setCancelled(!collection.getItemInfo(When.ARMORUNEQUIP).execute(e.getPlayer().getLocation(), e.getPlayer(), true));
-        });
+        getOptional(e.getItem(), When.ARMORUNEQUIP)
+                .ifPresent(collection -> e.setCancelled(!collection.getItemInfo(When.ARMORUNEQUIP).execute(e.getPlayer().getLocation(), e.getPlayer(), true)));
     }
     
     @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
@@ -136,10 +132,8 @@ public class ItemListener implements Listener
     @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
     private void onItemConsume(final PlayerItemConsumeEvent e)
     {
-        getOptional(e.getItem(), When.CONSUME).ifPresent(collection -> 
-        {
-            e.setCancelled(collection.getItemInfo(When.CONSUME).executeWithItem(e.getPlayer().getLocation(), e.getPlayer(), e.getItem()));
-        });
+        getOptional(e.getItem(), When.CONSUME)
+                .ifPresent(collection ->e.setCancelled(collection.getItemInfo(When.CONSUME).executeWithItem(e.getPlayer().getLocation(), e.getPlayer(), e.getItem())));
     }
     
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
@@ -492,6 +486,9 @@ public class ItemListener implements Listener
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
     private void onBlockBreak(final BlockBreakEvent e)
     {
+        ItemStack hand = EntityUtil.getMainHand(e.getPlayer().getEquipment());
+        getOptional(hand, When.MINE).ifPresent(collection -> collection.getItemInfo(When.MINE).executeWithItem(e.getBlock().getLocation(), e.getPlayer(), hand));
+        
         Optional.ofNullable(BlockManager.getInstance().removeBlock(e.getBlock())).ifPresent(collection -> 
         {              
             if(collection.hasWhen(When.BLOCKDESTROY))
@@ -550,6 +547,12 @@ public class ItemListener implements Listener
                         }
                     });
         }
+    }
+    
+    @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
+    private void onEnchant(final PrepareItemEnchantEvent e)
+    {
+        getOptional(e.getItem()).filter(collection -> !collection.isEnchantable()).ifPresent(collection -> e.setCancelled(true));
     }
     
     public static void register1_9Listener()

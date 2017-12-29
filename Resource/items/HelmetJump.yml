@@ -3,7 +3,9 @@ Item:
   name: "&2&lJump &fHelmet"
   lore:
     - "&7Equip it for get a permanent jump boost"
-    
+
+
+
 armorequip:
   Action:
     player:

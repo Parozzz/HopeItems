@@ -62,6 +62,16 @@ public class ItemCollection
         return Stream.of(when).anyMatch(infos::containsKey);
     }
     
+    private boolean enchantable = true;
+    public void setEnchantable(final boolean bln)
+    {
+        enchantable = bln;
+    }
+    
+    public boolean isEnchantable()
+    {
+        return enchantable;
+    }
     
     private CooldownManager cooldown;
     public void setCooldown(final CooldownManager cooldown)

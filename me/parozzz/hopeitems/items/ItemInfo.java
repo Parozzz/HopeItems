@@ -9,6 +9,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import me.parozzz.hopeitems.items.managers.conditions.ConditionManager;
 import me.parozzz.hopeitems.items.managers.actions.ActionManager;
 import me.parozzz.hopeitems.items.managers.actions.DoubleActionManager;
@@ -32,7 +33,7 @@ public class ItemInfo
 {
     public enum When
     {
-        LEFTINTERACT, RIGHTINTERACT, 
+        LEFTINTERACT, RIGHTINTERACT, MINE,
         CONSUME, SPLASH, LINGERING, DISPENSE, PROJECTILE,
         ARMOREQUIP, ARMORUNEQUIP,
         ATTACKSELF, ATTACKOTHER,
@@ -78,6 +79,17 @@ public class ItemInfo
         actions.add(am);
     }
     
+    private double chance = -1D;
+    public void setChance(final double chance)
+    {
+        this.chance = chance;
+    }
+    
+    private boolean calculcateChance()
+    {
+        return chance == -1 ? true : ThreadLocalRandom.current().nextDouble(100D) < chance;
+    }
+    
     private MobManager mobManager;
     public void setMobManager(final MobManager mm)
     {
@@ -120,7 +132,7 @@ public class ItemInfo
     
     public boolean execute(final Location l, final Dispenser d)
     {
-        if(checkConditions(l, null))
+        if(calculcateChance() && checkConditions(l, null))
         {
             spawnMobs(l, d.getBlockProjectileSource());
             executeActions(l, null);
@@ -132,7 +144,7 @@ public class ItemInfo
     
     public boolean execute(final Location l, final Player p, final boolean conditions)
     {
-        if(!conditions || (checkConditions(l, p) && !collection.hasCooldown(p)))
+        if(!conditions || (calculcateChance() && (checkConditions(l, p) && !collection.hasCooldown(p))))
         {
             spawnMobs(l, p);
             executeActions(l, p);

@@ -23,8 +23,7 @@ import org.bukkit.entity.Player;
  */
 public enum ConditionType 
 {
-    PLAYER(true){
-        private final boolean tryE=true;
+    PLAYER(true){;
         @Override
         public ConditionManager getConditionManager(final ComplexMapList mapList)
         {
