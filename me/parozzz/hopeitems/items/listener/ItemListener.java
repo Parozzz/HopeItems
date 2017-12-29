@@ -44,7 +44,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -53,6 +52,9 @@ import org.bukkit.event.entity.LingeringPotionSplashEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -553,6 +555,50 @@ public class ItemListener implements Listener
     private void onEnchant(final PrepareItemEnchantEvent e)
     {
         getOptional(e.getItem()).filter(collection -> !collection.isEnchantable()).ifPresent(collection -> e.setCancelled(true));
+    }
+            
+                
+    @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
+    private void onAnvilClick(final InventoryClickEvent e)
+    {
+        if(e.getInventory().getType() == InventoryType.ANVIL)
+        {
+            ItemStack zero = e.getInventory().getItem(0);
+            getOptional(zero).ifPresent(collection -> 
+            {
+                switch(e.getAction())
+                {
+                    case PLACE_ONE:
+                    case PLACE_ALL:
+                        if(e.getInventory().equals(e.getClickedInventory()) && e.getSlot() == 1)
+                        {
+                            e.setCancelled(checkEnchantments(zero, e.getCursor()));
+                        }
+                        break;
+                    case MOVE_TO_OTHER_INVENTORY:
+                        if(!e.getInventory().equals(e.getClickedInventory()))
+                        {
+                            e.setCancelled(checkEnchantments(zero, e.getCurrentItem()));
+                        }
+                        break;
+                    case HOTBAR_SWAP:
+                        if(e.getInventory().equals(e.getClickedInventory()))
+                        {
+                            Optional.ofNullable(e.getWhoClicked().getInventory().getItem(e.getHotbarButton())).ifPresent(item -> 
+                            {
+                                e.setCancelled(checkEnchantments(zero, item));
+                            });
+                        }
+                        break;
+                }
+            });
+        }
+    }
+            
+    private boolean checkEnchantments(final ItemStack zero, final ItemStack one)
+    {
+        return one.getType() == Material.ENCHANTED_BOOK || 
+                (zero.getType() == one.getType() && one.getEnchantments().entrySet().stream().anyMatch(en -> zero.getEnchantmentLevel(en.getKey()) <= en.getValue()));
     }
     
     public static void register1_9Listener()
