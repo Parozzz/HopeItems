@@ -88,6 +88,50 @@ public class Configs
             FileConfiguration config = Util.loadUTF(file);
             
             ItemStack item = ItemUtil.getItemByPath(config.getConfigurationSection("Item"));
+            
+            ItemCollection collection = new ItemCollection(id, item);
+            collection.setEnchantable(config.getBoolean("enchantable", true));
+            
+            Optional.ofNullable(config.getConfigurationSection("Cooldown")).map(CooldownManager::new).ifPresent(collection::setCooldown);
+            
+            config.getKeys(false).stream().filter(key -> !Util.or(key.toLowerCase(), "enchantable", "item", "crafting", "cooldown")).map(config::getConfigurationSection).forEach(path -> 
+            {
+                String pathName = path.getName();
+                Set<When> whens = pathName.equalsIgnoreCase("all") ? 
+                        EnumSet.allOf(When.class) : 
+                        Stream.of(pathName.split(",")).map(str -> Debug.validateEnum(str, When.class)).collect(Collectors.toSet());
+                
+                ItemInfo info = new ItemInfo(collection, whens);
+                Util.ifCheck(path.contains("chance"), () -> info.setChance(path.getDouble("chance")));
+                
+                whens.forEach(w -> collection.setItemInfo(w, info));
+                
+                info.removeOnUse = path.getBoolean("removeOnUse", false);
+                Optional.ofNullable(path.getConfigurationSection("Condition")).ifPresent(cPath -> 
+                {
+                    cPath.getValues(false).forEach((condition, list) -> 
+                    {
+                        info.addConditionManager(Debug.validateEnum(condition, ConditionType.class).getConditionManager(new ComplexMapList((List<Map<?, ?>>)list)));
+                    });
+                });
+
+                Optional.ofNullable(path.getConfigurationSection("Action")).ifPresent(aPath -> 
+                {
+                    aPath.getValues(false).forEach((action, list) -> 
+                    {
+                        info.addActionManager(Debug.validateEnum(action, ActionType.class).getActionManager(new SimpleMapList((List<Map<? , ?>>)list)));
+                    });
+                });
+
+                Optional.ofNullable(path.getConfigurationSection("Mob")).ifPresent(mPath -> info.setMobManager(new MobManager(info, mPath)));
+                Optional.ofNullable(path.getConfigurationSection("Explosive")).ifPresent(ePath -> info.setExplosiveManager(new ExplosiveManager(ePath)));
+                Optional.ofNullable(path.getConfigurationSection("Lucky")).ifPresent(lPath -> info.setLuckyManager(new LuckyManager(lPath)));
+                
+            });
+            
+            CustomItemUtil.addCustomTag(item, id);
+            ItemRegistry.addCollection(collection);
+            
             Optional.ofNullable(config.getConfigurationSection("Crafting")).filter(path -> !reload).ifPresent(path -> 
             {
                 Recipe r;
@@ -132,49 +176,6 @@ public class Configs
                 }
                 Bukkit.addRecipe(r);
             });
-            
-            ItemCollection collection = new ItemCollection(id, item);
-            collection.setEnchantable(config.getBoolean("enchantable", true));
-            
-            Optional.ofNullable(config.getConfigurationSection("Cooldown")).map(CooldownManager::new).ifPresent(collection::setCooldown);
-            
-            config.getKeys(false).stream().filter(key -> !Util.or(key.toLowerCase(), "enchantable", "item", "crafting", "cooldown")).map(config::getConfigurationSection).forEach(path -> 
-            {
-                String pathName = path.getName();
-                Set<When> whens = pathName.equalsIgnoreCase("all") ? 
-                        EnumSet.allOf(When.class) : 
-                        Stream.of(pathName.split(",")).map(str -> Debug.validateEnum(str, When.class)).collect(Collectors.toSet());
-                
-                ItemInfo info = new ItemInfo(collection, whens);
-                Util.ifCheck(path.contains("chance"), () -> info.setChance(path.getDouble("chance")));
-                
-                whens.forEach(w -> collection.setItemInfo(w, info));
-                
-                info.removeOnUse = path.getBoolean("removeOnUse", false);
-                Optional.ofNullable(path.getConfigurationSection("Condition")).ifPresent(cPath -> 
-                {
-                    cPath.getValues(false).forEach((condition, list) -> 
-                    {
-                        info.addConditionManager(Debug.validateEnum(condition, ConditionType.class).getConditionManager(new ComplexMapList((List<Map<?, ?>>)list)));
-                    });
-                });
-
-                Optional.ofNullable(path.getConfigurationSection("Action")).ifPresent(aPath -> 
-                {
-                    aPath.getValues(false).forEach((action, list) -> 
-                    {
-                        info.addActionManager(Debug.validateEnum(action, ActionType.class).getActionManager(new SimpleMapList((List<Map<? , ?>>)list)));
-                    });
-                });
-
-                Optional.ofNullable(path.getConfigurationSection("Mob")).ifPresent(mPath -> info.setMobManager(new MobManager(info, mPath)));
-                Optional.ofNullable(path.getConfigurationSection("Explosive")).ifPresent(ePath -> info.setExplosiveManager(new ExplosiveManager(ePath)));
-                Optional.ofNullable(path.getConfigurationSection("Lucky")).ifPresent(lPath -> info.setLuckyManager(new LuckyManager(lPath)));
-                
-            });
-            
-            CustomItemUtil.addCustomTag(item, id);
-            ItemRegistry.addCollection(collection);
         });
     }
 }

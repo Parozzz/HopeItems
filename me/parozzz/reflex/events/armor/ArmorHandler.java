@@ -6,9 +6,11 @@
 package me.parozzz.reflex.events.armor;
 
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 import me.parozzz.reflex.events.armor.ArmorEquipEvent;
 import me.parozzz.reflex.events.armor.ArmorUnequipEvent;
@@ -38,6 +40,7 @@ import static org.bukkit.Material.LEATHER_LEGGINGS;
 import static org.bukkit.Material.PUMPKIN;
 import static org.bukkit.Material.SKULL_ITEM;
 import org.bukkit.block.Block;
+import org.bukkit.block.Jukebox;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
@@ -69,6 +72,8 @@ public class ArmorHandler implements Listener
     private final static EnumMap<Material, Armor> armors = new EnumMap(Material.class);
     private final static Map<Integer, EquipmentSlot> slots = new HashMap<>();
     private final static Map<Integer, EquipmentSlot> rawSlots = new HashMap<>();
+    
+    private final static Set<Material> clickable = EnumSet.noneOf(Material.class);
     static
     {
         slots.put(39, EquipmentSlot.HEAD); 
@@ -85,6 +90,60 @@ public class ArmorHandler implements Listener
         Stream.of(LEATHER_CHESTPLATE, CHAINMAIL_CHESTPLATE, GOLD_CHESTPLATE, IRON_CHESTPLATE, DIAMOND_CHESTPLATE).forEach(m -> armors.put(m, new Armor(38, EquipmentSlot.CHEST)));
         Stream.of(LEATHER_LEGGINGS, CHAINMAIL_LEGGINGS, GOLD_LEGGINGS, IRON_LEGGINGS, DIAMOND_LEGGINGS).forEach(m -> armors.put(m, new Armor(37, EquipmentSlot.LEGS)));
         Stream.of(LEATHER_BOOTS, CHAINMAIL_BOOTS, GOLD_BOOTS, IRON_BOOTS, DIAMOND_BOOTS).forEach(m -> armors.put(m, new Armor(36, EquipmentSlot.FEET)));
+    
+        Stream.of(Material.values()).forEach(m -> 
+        {
+            String name = m.name();
+            if(name.contains("GATE"))
+            {
+                clickable.add(m);
+            }
+            else if(name.contains("DOOR"))
+            {
+                clickable.add(m);
+            }
+            else if(name.contains("SHULKER_BOX"))
+            {
+                clickable.add(m);
+            }
+            else
+            {
+                switch(m)
+                {
+                    //Inventory Holders
+                    case CHEST:
+                    case TRAPPED_CHEST:
+                    case ENCHANTMENT_TABLE:
+                    case ANVIL:
+                    case BREWING_STAND:
+                    case WORKBENCH:
+                    case DISPENSER:
+                    case DROPPER:
+                    case FURNACE:
+                    case BURNING_FURNACE:
+                    case ENDER_CHEST:
+                    case BEACON:
+                    case HOPPER:
+                    //Bed
+                    case BED:
+                    case BED_BLOCK:
+                    //Redstone related
+                    case WOOD_BUTTON:
+                    case STONE_BUTTON:
+                    case TRIPWIRE_HOOK:
+                    case DAYLIGHT_DETECTOR:
+                    case DAYLIGHT_DETECTOR_INVERTED:
+                    case DIODE:
+                    case DIODE_BLOCK_OFF:
+                    case DIODE_BLOCK_ON:
+                    case REDSTONE_COMPARATOR:
+                    case REDSTONE_COMPARATOR_OFF:
+                    case REDSTONE_COMPARATOR_ON:
+                        clickable.add(m);
+                        break;
+                }
+            }
+        });
     }
     
     @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
@@ -96,7 +155,7 @@ public class ArmorHandler implements Listener
         }
         else if(e.getAction()==Action.RIGHT_CLICK_BLOCK)
         {
-            if(isContainer(e.getClickedBlock()) && !e.getPlayer().isSneaking())
+            if( !e.getPlayer().isSneaking() && isContainer(e.getClickedBlock()))
             {
                 return;
             }
@@ -367,7 +426,13 @@ public class ArmorHandler implements Listener
     
     private static boolean isContainer(final Block b)
     {
-        return b.getType() == Material.ANVIL || InventoryHolder.class.isInstance(b.getState());
+        Material type = b.getType();
+        if(type == Material.JUKEBOX)
+        {
+            return ((Jukebox)b.getState()).getPlaying() != Material.AIR;
+        }
+        
+        return clickable.contains(type);
     }
     
     private final static class Armor
