@@ -190,6 +190,8 @@ all: #This is the when for this set of options. If you select ALL, effects will 
       - permission: value:exampleitem.use,message:&cNo permission to use it
       - gamemode: value:creative,message:&cThe item need to be used in creative mode
       - sneaking: value:true,message:&cSneak next time!
+      - sprinting: value:true,message:&cSprint next time!
+      - hasPotion: jump
       - food: value:1~10,message:&cYou food bar is not in the right range! &f(1 to 10)
       # - food: value:10,message:&cFood level is not right
       # - food: value:>10,message:&cFood level is too high
@@ -212,16 +214,11 @@ all: #This is the when for this set of options. If you select ALL, effects will 
       - setFood: 1~10
       - addSaturation: 1.5~2.5
       - setSaturation: 1.5~2.5
-      - setHealth: 5~10
-      - giveHealth: 5~10
       - giveExp: 50~100
       - setExp: 50~100
       - addLevel: 1~5
       - setLevel: 1~5
       - setFly: true
-      - setFire: -1
-      - addPotion: type:jump,duration:300,level:2
-      - removePotion: jump #all
       - money: 100
       # - money: -200
       - setGamemode: survival
@@ -233,6 +230,12 @@ all: #This is the when for this set of options. If you select ALL, effects will 
       - actionbar: "&fThis is an &6ActionBar!"
       - message: "&fThis is a &6chat &fmessage!"
       - chat: "&fYou all can find me in {world} at {x} {y} {z}!"
+    mob:
+      - setHealth: 5~10
+      - giveHealth: 5~10
+      - setFire: -1
+      - addPotion: type:jump,duration:300,level:2
+      - removePotion: jump #all
     playerEffect:
       #- sound: name:ENTITY_EXPERIENCE_ORB_PICKUP,volume:1,pitch:1
       - particle: name:spell_mob,effect:static,quantity:100
@@ -245,6 +248,7 @@ all: #This is the when for this set of options. If you select ALL, effects will 
       - particle: name:spell_mob,effect:explosion,quantity:100
       - explosion: power:5,fire:true,damage:true
       - command: spawnmob pig {world} {x} {y} {z}
+      - spawn: type:pig,amount:3
   Lucky:
     animation: gui
     Gui:
