@@ -14,6 +14,7 @@ leftinteract:
       
 projectile:
   removeOnUse: false
+  projectileDamageType: shooter
   Action:
     player:
       - chat: "&dHey pss, &fi am in &7{world} &fat &7{x} {y} {z}!"

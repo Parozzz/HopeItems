@@ -191,7 +191,7 @@ all: #This is the when for this set of options. If you select ALL, effects will 
       - gamemode: value:creative,message:&cThe item need to be used in creative mode
       - sneaking: value:true,message:&cSneak next time!
       - sprinting: value:true,message:&cSprint next time!
-      - hasPotion: jump
+      - hasPotion: value:jump
       - food: value:1~10,message:&cYou food bar is not in the right range! &f(1 to 10)
       # - food: value:10,message:&cFood level is not right
       # - food: value:>10,message:&cFood level is too high

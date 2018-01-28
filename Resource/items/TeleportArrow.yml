@@ -6,6 +6,7 @@ Item:
  
 projectile:
   removeOnUse: false
+  onlyProjectileDamage: false
   Action:
     worldEffect:
       - particle: name:spell_mob,effect:static,quantity:100

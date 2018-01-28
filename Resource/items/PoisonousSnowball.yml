@@ -1,0 +1,12 @@
+Item:
+  id: snow_ball
+  name: "&2Poisonous &fSnowball"
+  lore:
+    - "&7Hit something to give poisoning!"
+
+projectile: #This effects will be triggered for both projectile and dropongrond when
+  removeOnUse: true
+  projectileDamageType: damaged
+  Action:
+    mob:
+      potion: type:poison,duration:10,level:1
