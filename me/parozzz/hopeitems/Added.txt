@@ -1,0 +1,10 @@
+Added "overridePvpProtection" to config
+Added item names tab completition.
+
+Fixed tab completing
+
+Folders are now allowed inside the main items folder. Add as many as subfolder you want!
+
+Added "projectileDamageType" when tag. Can decide how a projectile should works.
+Conditions and cooldown where not applied to snowball and enderpearls
+Fixed npe on entity hit by a custom projectile
