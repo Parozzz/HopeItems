@@ -5,8 +5,8 @@
  */
 package me.parozzz.hopeitems.items.managers.mobs.parsers;
 
+import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -14,12 +14,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import me.parozzz.hopeitems.HopeItems;
 import me.parozzz.hopeitems.items.ItemCollection;
 import me.parozzz.hopeitems.items.ItemInfo;
 import me.parozzz.hopeitems.items.ItemInfo.When;
 import me.parozzz.hopeitems.items.ItemRegistry;
+import me.parozzz.hopeitems.items.database.MobTable;
 import me.parozzz.hopeitems.items.managers.IManager;
 import me.parozzz.hopeitems.items.managers.mobs.MobEquipmentPart;
 import me.parozzz.hopeitems.items.managers.mobs.abilities.parser.AbilityManager;
@@ -47,6 +48,8 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public class MobManager implements IManager
 {
+    private final static Logger logger = Logger.getLogger(MobManager.class.getSimpleName());
+    
     private final static String ABILITY_METADATA = "Hopeitems.ability";
     private final static String DROP_METADATA = "Hopeitems.drops";
     
@@ -123,26 +126,61 @@ public class MobManager implements IManager
         
         if(flag)
         {
-            customMobs.put(liv.getUniqueId(), this);
+            addCustomMob(liv.getUniqueId(), this);
         }
         return liv;
     }
     
     private final static Map<UUID, MobManager> customMobs = new HashMap<>();
-    
-    public static void saveData(final FileConfiguration data)
+
+    public static void addCustomMob(final UUID u, final MobManager mobManager)
     {
-        data.set("mobs", customMobs.entrySet().stream().map(e -> 
-        {
-            Map<String, String> map = new LinkedHashMap<>();
-            map.put("MOB_UID", e.getKey().toString());
-            map.put("ITEM_ID", e.getValue().info.getCollection().getId());
-            map.put("WHEN", e.getValue().info.getWhens().stream().findFirst().get().name());
-            return map;
-        }).collect(Collectors.toList()));
+        HopeItems.getInstance().getDatabaseManager().getMobTable().addMob(u, mobManager.info);
+        customMobs.put(u, mobManager);
     }
     
-    public static void loadData(final FileConfiguration data)
+    public static @Nullable MobManager removeCustomMob(final UUID u)
+    {
+        MobManager mobManager = customMobs.remove(u);
+        if(mobManager != null)
+        {
+            HopeItems.getInstance().getDatabaseManager().getMobTable().removeMob(u);
+        }
+        return mobManager;
+    }
+    
+    public static void loadAllMobs()
+    {
+        MobTable mobTable = HopeItems.getInstance().getDatabaseManager().getMobTable();
+        mobTable.getAllMobs().forEach(info -> 
+        {
+            ItemCollection collection = ItemRegistry.getCollection(info.getCollectionId());
+            if(collection == null)
+            {
+                logger.log(Level.WARNING, "An error occoured while loading a custom mob. The item named {0} does not exists anymore. Removing.", info.getCollectionId());
+                mobTable.removeMob(info.getUUID());
+                return;
+            }
+            
+            ItemInfo itemInfo = collection.getItemInfo(info.getWhen());
+            if(itemInfo == null)
+            {
+                logger.log(Level.WARNING, "An error occoured while loading a custom mob. The when {0} for the item named {1} does not exists anymore. Removing.", new Object[]{ info.getWhen(), info.getCollectionId() });
+                mobTable.removeMob(info.getUUID());
+                return;
+            }
+            else if(!itemInfo.hasMob())
+            {
+                logger.log(Level.WARNING, "An error occoured while loading a custom mob. Yhe item named {0} does not have a custom mob anymore. Removing.", info.getCollectionId());
+                mobTable.removeMob(info.getUUID());
+                return;
+            }
+            
+            customMobs.put(info.getUUID(), itemInfo.getMobManager());
+        });
+    }
+    
+    public static void convertYamlToSql(final FileConfiguration data)
     {
         data.getMapList("mobs").stream()
                 .map(map -> (Map<String, String>)map)
@@ -169,13 +207,27 @@ public class MobManager implements IManager
                                 return null;
                             });
                 });
+        
+        customMobs.forEach((u, manager) -> HopeItems.getInstance().getDatabaseManager().getMobTable().addMob(u, manager.info));
     }
     
     public static final String MINION = "HopeItems.minion";
     
-    public static void registerListener()
+    public static Listener getPaperSpigotListener()
     {
-        Bukkit.getPluginManager().registerEvents(new Listener()
+        return new Listener()
+        {
+            @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
+            private void onEntityRemovedFromWorld(final EntityRemoveFromWorldEvent e)
+            {
+                MobManager.removeCustomMob(e.getEntity().getUniqueId());
+            }
+        };
+    }
+    
+    public static Listener getListener()
+    {
+        return new Listener()
         {
             @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
             private void onEntityTarget(final EntityTargetEvent e)
@@ -223,10 +275,23 @@ public class MobManager implements IManager
             @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
             private void onEntityDeath(final EntityDeathEvent e)
             {
-                Optional.ofNullable(customMobs.remove(e.getEntity().getUniqueId()))
+                Optional.ofNullable(MobManager.removeCustomMob(e.getEntity().getUniqueId()))
                         .filter(MobManager::hasDrops)
                         .ifPresent(manager -> manager.dropManager.getRandomDrop().accept(e));
             }
-        }, JavaPlugin.getProvidingPlugin(MobManager.class));
+        };
     }
 }
+
+    /*
+    public static void saveData(final FileConfiguration data)
+    {
+        data.set("mobs", customMobs.entrySet().stream().map(e -> 
+        {
+            Map<String, String> map = new LinkedHashMap<>();
+            map.put("MOB_UID", e.getKey().toString());
+            map.put("ITEM_ID", e.getValue().info.getCollection().getId());
+            map.put("WHEN", e.getValue().info.getWhens().stream().findFirst().get().name());
+            return map;
+        }).collect(Collectors.toList()));
+    }*/

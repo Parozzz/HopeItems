@@ -12,12 +12,11 @@ import me.parozzz.hopeitems.Configs;
 import me.parozzz.hopeitems.DebugLogger;
 import me.parozzz.hopeitems.HopeItems;
 import me.parozzz.hopeitems.items.BlockManager;
-import me.parozzz.hopeitems.items.HItem;
+import me.parozzz.hopeitems.items.CustomItemUtil;
 import me.parozzz.hopeitems.items.ItemCollection;
 import me.parozzz.hopeitems.items.ItemInfo;
 import me.parozzz.hopeitems.items.ItemInfo.ProjectileDamageType;
 import me.parozzz.hopeitems.items.ItemInfo.When;
-import me.parozzz.hopeitems.items.ItemRegistry;
 import me.parozzz.hopeitems.items.listener.ListenerUtils.ProjectileType;
 import me.parozzz.reflex.MCVersion;
 import me.parozzz.reflex.events.armor.ArmorEquipEvent;
@@ -26,7 +25,6 @@ import me.parozzz.reflex.utilities.EntityUtil;
 import me.parozzz.reflex.utilities.ItemUtil;
 import me.parozzz.reflex.utilities.TaskUtil;
 import me.parozzz.reflex.utilities.Util;
-import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -74,9 +72,11 @@ import org.bukkit.metadata.FixedMetadataValue;
 public class ItemListener implements Listener
 {   
     private final HopeItems hopeItems;
-    public ItemListener(final HopeItems hopeItems)
+    private final BlockManager blockManager;
+    public ItemListener(final HopeItems hopeItems, final BlockManager blockManager)
     {
         this.hopeItems = hopeItems;
+        this.blockManager = blockManager;
     }
     
     @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
@@ -84,11 +84,11 @@ public class ItemListener implements Listener
     {
         Optional.ofNullable(e.getClickedBlock())
                 .map(Block::getLocation)
-                .flatMap(l -> Optional.ofNullable(BlockManager.getInstance().getBlockInfo(l)))
+                .flatMap(l -> Optional.ofNullable(blockManager.getBlockInfo(l)))
                 .map(collection -> collection.getItemInfo(When.BLOCKINTERACT))
                 .filter(Objects::nonNull)
                 .filter(info -> info.execute(e.getClickedBlock().getLocation().add(0.5, 1, 0.5), e.getPlayer(), true) && info.removeOnUse)
-                .ifPresent(info -> BlockManager.getInstance().removeBlock(e.getClickedBlock()));
+                .ifPresent(info -> blockManager.removeBlock(e.getClickedBlock()));
         
         if(e.getAction() == Action.PHYSICAL)
         {
@@ -516,7 +516,7 @@ public class ItemListener implements Listener
         {
             if(collection.hasAnyWhen(When.BLOCKINTERACT, When.BLOCKSTEP, When.BLOCKDESTROY))
             {
-                BlockManager.getInstance().addBlock(e.getBlockPlaced(), collection);
+                blockManager.addBlock(e.getBlockPlaced(), collection);
             }
             else
             {
@@ -531,7 +531,7 @@ public class ItemListener implements Listener
         ItemStack hand = EntityUtil.getMainHand(e.getPlayer().getEquipment());
         getOptional(hand, When.MINE).ifPresent(collection -> collection.getItemInfo(When.MINE).executeWithItem(e.getBlock().getLocation(), e.getPlayer(), hand));
         
-        Optional.ofNullable(BlockManager.getInstance().removeBlock(e.getBlock())).ifPresent(collection -> 
+        Optional.ofNullable(blockManager.removeBlock(e.getBlock())).ifPresent(collection -> 
         {              
             if(collection.hasWhen(When.BLOCKDESTROY))
             {
@@ -569,7 +569,7 @@ public class ItemListener implements Listener
     @EventHandler(ignoreCancelled=false,priority=EventPriority.HIGHEST)
     private void onCustomBlockExplosion(final EntityExplodeEvent e)
     {
-        e.blockList().forEach(BlockManager.getInstance()::removeBlock);
+        e.blockList().forEach(blockManager::removeBlock);
     }
     
     @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
@@ -577,7 +577,7 @@ public class ItemListener implements Listener
     {
         if(!e.getFrom().getBlock().equals(e.getTo().getBlock()))
         {
-            Optional.ofNullable(BlockManager.getInstance().getBlockInfo(e.getTo().getBlock().getRelative(BlockFace.DOWN).getLocation()))
+            Optional.ofNullable(blockManager.getBlockInfo(e.getTo().getBlock().getRelative(BlockFace.DOWN).getLocation()))
                     .filter(collection -> collection.hasWhen(When.BLOCKSTEP))
                     .map(collection -> collection.getItemInfo(When.BLOCKSTEP))
                     .filter(Objects::nonNull)
@@ -585,7 +585,7 @@ public class ItemListener implements Listener
                     {
                         if(info.execute(e.getTo(), e.getPlayer(), true) && info.removeOnUse)
                         {
-                            BlockManager.getInstance().removeBlock(e.getTo().getBlock().getLocation());
+                            blockManager.removeBlock(e.getTo().getBlock().getLocation());
                         }
                     });
         }
@@ -641,9 +641,9 @@ public class ItemListener implements Listener
                 (zero.getType() == one.getType() && one.getEnchantments().entrySet().stream().anyMatch(en -> zero.getEnchantmentLevel(en.getKey()) <= en.getValue()));
     }
     
-    public static void register1_9Listener(final HopeItems hopeItems)
+    public static Listener get1_9Listener(final HopeItems hopeItems)
     {
-        Listener l=new Listener()
+        return new Listener()
         {
             private final String LINGERING_METADATA="HopeItems.CustomLingeringPotion";
             @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
@@ -698,18 +698,12 @@ public class ItemListener implements Listener
                 }
             }
         };
-        
-        Bukkit.getPluginManager().registerEvents(l, hopeItems);
     }
     
     private static Optional<ItemCollection> getOptional(final ItemStack item, final When... w)
     {
-        return Optional.ofNullable(item)
-                .map(HItem::new)
-                .filter(HItem::isValid)
-                .map(HItem::getStringId)
-                .map(ItemRegistry::getCollection)
-                .filter(collection -> w.length == 0 || collection.hasAnyWhen(w))
-                .filter(Objects::nonNull);
+        return item == null || item.getType() == Material.AIR 
+                ? Optional.empty()
+                : Optional.ofNullable(CustomItemUtil.getItemCollection(item)).filter(collection -> w.length == 0 || collection.hasAnyWhen(w));
     }
 }

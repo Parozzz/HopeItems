@@ -240,7 +240,10 @@ all: #This is the when for this set of options. If you select ALL, effects will 
       #- sound: name:ENTITY_EXPERIENCE_ORB_PICKUP,volume:1,pitch:1
       - particle: name:spell_mob,effect:static,quantity:100
       - teleport: true
+      - allyPotion: type:jump,duration:300,level:2,range:10
+      - enemyPotion: type:poison,duration:10,level:2,range:10
     worldEffect:
+      - rangedpotion: type:jump,duration:300,level:2,range:10
       - message: "&fThis message will be displayed in &6{world}"
       - actionbar: "&fThis actionbar will be displayed in &6{world}"
       - title: title:&fThis title will be displayed,subtitle:&fin {world},in:10,stay:50,out:10

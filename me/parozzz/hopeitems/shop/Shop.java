@@ -8,6 +8,7 @@ package me.parozzz.hopeitems.shop;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -16,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import me.parozzz.hopeitems.Configs;
 import me.parozzz.hopeitems.HopeItems;
+import me.parozzz.hopeitems.shop.ShopPage.ShopHolder;
 import me.parozzz.reflex.utilities.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -48,36 +50,27 @@ public class Shop
     }
     
     private final Map<String, ShopPage> pages;
-    private final Map<String, ShopPage> titles;
     private Shop()
     {
         pages=new HashMap<>();
-        titles=new HashMap<>();
     }
     
-    public void loadConfig()
+    public void loadConfig(final HopeItems hopeItems)
     {
         pages.clear();
-        titles.clear();
         try {
-            FileConfiguration c = Util.fileStartup(HopeItems.getInstance(), new File(JavaPlugin.getPlugin(HopeItems.class).getDataFolder(), "shop.yml"));
+            FileConfiguration c = Util.fileStartup(HopeItems.getInstance(), new File(hopeItems.getDataFolder(), "shop.yml"));
             
             c.getKeys(false).stream().map(c::getConfigurationSection).forEach(pPath -> 
             {
-                String pageName=pPath.getName();
+                String pageName = pPath.getName();
                 
-                ShopPage page=new ShopPage(pageName, pPath);
+                ShopPage page = new ShopPage(pageName, pPath);
                 pages.put(pageName.toLowerCase(), page);
-                titles.put(page.getInventory().getTitle(), page);
             });
         } catch (FileNotFoundException | UnsupportedEncodingException ex) {
             Logger.getLogger(Shop.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
-    
-    public ShopPage getPageByTitle(final String title)
-    {
-        return titles.get(title);
     }
     
     public ShopPage getPageByName(final String name)
@@ -87,19 +80,21 @@ public class Shop
     
     public Set<String> pageNames()
     {
-        return pages.keySet();
+        return Collections.unmodifiableSet(pages.keySet());
     }
     
-    public static void registerListener()
+    public static Listener getListener()
     {
-        Listener l=new Listener()
+        return new Listener()
         {
             @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
             private void onInventoryClick(final InventoryClickEvent e)
             {
-                Optional.ofNullable(Shop.getInstance().getPageByTitle(e.getInventory().getTitle())).ifPresent(page -> page.onEvent(e));
+                if(e.getInventory().getHolder() instanceof ShopHolder)
+                {
+                    ((ShopHolder)e.getInventory().getHolder()).getShop().onEvent(e);
+                }
             }
         };
-        Bukkit.getPluginManager().registerEvents(l, JavaPlugin.getProvidingPlugin(Shop.class));
     }
 }

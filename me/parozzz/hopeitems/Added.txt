@@ -1,10 +1,25 @@
-Added "overridePvpProtection" to config
-Added item names tab completition.
 
-Fixed tab completing
 
-Folders are now allowed inside the main items folder. Add as many as subfolder you want!
+Added "rangedpotion" in playerEffect action subType. In case of a clan plugin hook, will filter allied entities and player itself.
 
-Added "projectileDamageType" when tag. Can decide how a projectile should works.
-Conditions and cooldown where not applied to snowball and enderpearls
-Fixed npe on entity hit by a custom projectile
+This below will works only if a clan plugin is hooked.
+Added "allypotion" in playerEffect action type. Will add the potion to everyone near you in your same clan.
+Added "enemypotion" in playerEffect action type. Will add the potion to everyone near you not in your same clan clan.
+
+Added "rangedpotion" in worldEffect action subType. Will add the potion to everyone nearby, same player included (- rangedpotion: type:jump,duration:300,level:2,range:10)
+
+Added mob optimization if using PaperSpigot 1.11+
+Optimized Shop
+Optimized Item CollectionId fetching
+
+Already added to gitHub (28 / 01 / 2018).
+    Added "overridePvpProtection" to config
+    Added item names tab completition.
+
+    Fixed tab completing
+
+    Folders are now allowed inside the main items folder. Add as many as subfolder you want!
+
+    Added "projectileDamageType" when tag. Can decide how a projectile should works.
+    Conditions and cooldown where not applied to snowball and enderpearls
+    Fixed npe on entity hit by a custom projectile

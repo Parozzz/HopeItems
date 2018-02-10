@@ -73,9 +73,9 @@ public class LuckyManager
         animation.roll(rewards, p);
     }
     
-    public static void registerListener()
+    public static Listener getListener()
     {
-        Listener l=new Listener()
+        return new Listener()
         {
             @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
             private void onInventoryClick(final InventoryClickEvent e)
@@ -100,6 +100,5 @@ public class LuckyManager
                 }
             }
         };
-        Bukkit.getPluginManager().registerEvents(l, JavaPlugin.getProvidingPlugin(LuckyManager.class));
     }
 }

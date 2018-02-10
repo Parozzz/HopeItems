@@ -1,5 +1,5 @@
 name: HopeItems
-version: V2_3.2
+version: 3_BETA1.3
 author: Parozzz
 main: me.parozzz.hopeitems.HopeItems
 commands:
@@ -8,4 +8,4 @@ commands:
     Usage: /items
     Description: Main Command
 depend: [ReflexAPI]
-softdepend: [Multiverse-Core, Vault, WorldGuard]
+softdepend: [Multiverse-Core, Vault, WorldGuard, Factions, mcMMO]

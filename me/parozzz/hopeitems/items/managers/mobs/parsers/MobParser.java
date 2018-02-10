@@ -5,13 +5,9 @@
  */
 package me.parozzz.hopeitems.items.managers.mobs.parsers;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
-import me.parozzz.hopeitems.items.managers.IManager;
 import me.parozzz.hopeitems.items.managers.IParser;
 import me.parozzz.hopeitems.items.managers.mobs.MobEquipmentPart;
 import me.parozzz.hopeitems.items.managers.mobs.abilities.parser.AbilityManager;
@@ -144,39 +140,6 @@ public class MobParser implements IParser
         }
         
         return mobManager;
-        /*
-                this.info=info;
-        
-        try { et = EntityType.valueOf(path.getString("type").toUpperCase()); }
-        catch(final IllegalArgumentException t) { throw new IllegalArgumentException("Wrong entity type name"); }
-        
-        path.getMapList("option").stream()
-                .map(Map::entrySet)
-                .flatMap(Set::stream)
-                .map(e -> new String[] { e.getKey().toString().toUpperCase() , e.getValue().toString() })
-                .forEach(a ->
-                {
-                    try { option = option.andThen(MobOption.valueOf(a[0]).getConsumer(a[1])); }
-                    catch(final IllegalArgumentException t) { throw new IllegalArgumentException("A mob option named "+a[0]+" does not exist"); }
-                });
-        
-        Optional.ofNullable(path.getConfigurationSection("Armor")).ifPresent(aPath -> 
-        {
-            armor=aPath.getKeys(false).stream().map(aPath::getConfigurationSection).map(sPath -> 
-            {
-                EquipmentSlot slot=EquipmentSlot.valueOf(sPath.getName().toUpperCase());
-                ItemStack item = ItemUtil.getItemByPath(sPath);
-                float chance=((float)sPath.getDouble("chance", 0F))/100;
-                
-                Consumer<EntityEquipment> cns= equip -> EntityUtil.addItem(equip, slot, item.clone(), chance);
-                return cns;
-            }).reduce(Consumer::andThen).orElseGet(() -> liv -> {});
-        });
-        
-        
-        this.abilityManager = Optional.ofNullable(path.getConfigurationSection("Ability")).map(abilityParser::parse).orElse(null);
-        Optional.ofNullable(path.getConfigurationSection("Drop")).ifPresent(dPath -> drop=new DropManager(this, dPath));
-        */
     }
    
     

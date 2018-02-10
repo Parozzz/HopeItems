@@ -9,21 +9,19 @@ import me.parozzz.hopeitems.items.managers.actions.parsers.single.ActionRegistry
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
-import me.parozzz.hopeitems.Dependency;
+import me.parozzz.hopeitems.hooks.Dependency;
 import me.parozzz.hopeitems.items.managers.AbstractRegistry;
 import me.parozzz.hopeitems.items.managers.IParser;
 import me.parozzz.hopeitems.items.managers.ISpecificParser;
 import me.parozzz.hopeitems.items.managers.ManagerUtils;
-import me.parozzz.hopeitems.items.managers.actions.parsers.single.AbstractAction;
 import me.parozzz.hopeitems.items.managers.actions.ActionType;
 import me.parozzz.hopeitems.items.managers.actions.IAction;
 import me.parozzz.hopeitems.items.managers.actions.parsers.bi.BiActionRegistry;
-import me.parozzz.hopeitems.items.managers.actions.parsers.bi.SpecificBiActionParser;
-import me.parozzz.hopeitems.items.managers.actions.parsers.single.SpecificActionParser;
 import me.parozzz.reflex.NMS.entity.EntityPlayer;
 import me.parozzz.reflex.NMS.packets.ChatPacket;
 import me.parozzz.reflex.NMS.packets.ChatPacket.MessageType;
@@ -181,7 +179,7 @@ public class ActionParser implements IParser
                         if(pe == null)
                         {
                             logger.log(Level.WARNING, "Error parsing a setpotion action in mob ActionType");
-                            return liv -> {};
+                            return Util.EMPTY_CONSUMER;
                         }
                         return liv ->  liv.addPotionEffect(pe, true);
                     });
@@ -197,7 +195,7 @@ public class ActionParser implements IParser
                             if(pet == null)
                             {
                                 logger.log(Level.WARNING, "Error parsing removepotion action. The potion effect named {0} does not exist. Skipping.", value);
-                                return liv -> {};
+                                return Util.EMPTY_CONSUMER;
                             }
                             return liv -> liv.removePotionEffect(pet);
                         }
@@ -229,13 +227,41 @@ public class ActionParser implements IParser
                     worldEffectRegistry.addRegistered("explosion", value -> ManagerUtils.createExplosion(new MapArray(value)));
                     worldEffectRegistry.addRegistered("command", value -> 
                     {
-                        Placeholder command=new Placeholder(value).checkLocation();
+                        Placeholder command = new Placeholder(value).checkLocation();
                         return l -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.parse(l));
+                    });
+                    
+                    worldEffectRegistry.addRegistered("rangedpotion", value -> 
+                    {
+                        MapArray map = new MapArray(value);
+                        PotionEffect pe = ManagerUtils.getPotionEffect(map);
+                        if(pe == null)
+                        {
+                            logger.log(Level.WARNING, "An error occoured while parsing the potion effect for WORLDEFFECT action subType rangedpotion. Skipping.");
+                            return Util.EMPTY_CONSUMER;
+                        }
+                        int range = map.getValue("range", Integer::valueOf);
+                        
+                        return loc -> loc.getWorld().getNearbyEntities(loc, range, range, range).stream()
+                                .filter(LivingEntity.class::isInstance)
+                                .map(LivingEntity.class::cast)
+                                .forEach(liv -> liv.addPotionEffect(pe, true));
                     });
                     break;
                 case PLAYEREFFECT:
                     PlayerEffectRegistry playerEffectRegistry = new PlayerEffectRegistry();
                     this.speficiBiParserMap.put(type, playerEffectRegistry);
+                    
+                    if(Dependency.isClanHook())
+                    {
+                        playerEffectRegistry.addRegistered("rangedpotion", value -> getNearbyClanRangedPotionEntity(value, 0));
+                        playerEffectRegistry.addRegistered("allypotion", value -> getNearbyClanRangedPotionEntity(value, 1));
+                        playerEffectRegistry.addRegistered("enemypotion", value -> getNearbyClanRangedPotionEntity(value, 2));
+                    }
+                    else
+                    {
+                        playerEffectRegistry.addRegistered("rangedpotion", value -> getNearbyClanRangedPotionEntity(value, 3));
+                    }
                     
                     playerEffectRegistry.addRegistered("particle", value -> ManagerUtils.spawnPlayerParticle(new MapArray(value)));
                     playerEffectRegistry.addRegistered("teleport", value -> (p, l) -> p.teleport(l));
@@ -249,6 +275,31 @@ public class ActionParser implements IParser
         });
     }
     
+    private BiConsumer<Player, Location> getNearbyClanRangedPotionEntity(final String value, final int data)
+    {
+        MapArray map = new MapArray(value);
+        PotionEffect pe = ManagerUtils.getPotionEffect(map);
+        if(pe == null)
+        {
+            logger.log(Level.WARNING, "An error occoured while parsing the potion effect for PLAYEREFFECT action subType rangedpotion. Skipping.");
+            return Util.EMPTY_BICONSUMER;
+        }
+        int range = map.getValue("range", Integer::valueOf);
+        
+        switch(data)
+        {
+            case 0:
+                return (p, loc) -> Dependency.getClanHook().getFilteredNearbyEntities(p, loc, range).forEach(liv -> liv.addPotionEffect(pe, true));
+            case 1:
+                return (p, loc) -> Dependency.getClanHook().getNearbyAlliedPlayers(p, loc, range).forEach(liv -> liv.addPotionEffect(pe, true));
+            case 2:
+                return (p, loc) -> Dependency.getClanHook().getNearbyEnemyPlayers(p, loc, range).forEach(liv -> liv.addPotionEffect(pe, true));
+            case 3:
+                return (p, loc) -> loc.getWorld().getNearbyEntities(loc, range, range, range).stream().filter(LivingEntity.class::isInstance).map(LivingEntity.class::cast).filter(liv -> !liv.equals(p)).forEach(liv -> liv.addPotionEffect(pe, true));
+            default:
+                return Util.EMPTY_BICONSUMER;
+        }
+    }
     /*
     @Override
     public void addSpecificParser(final ActionType type, final String key, final ISpecificParser<?, IAction> specificParser) 
@@ -297,13 +348,16 @@ public class ActionParser implements IParser
                 }
                 else if(!localList.isEmpty())
                 {
-                    IAction action = parser.parse(localList.get(0));
-                    if(action == null)
+                    localList.forEach(value -> 
                     {
-                        logger.log(Level.WARNING, "There was a problem loading the action subType {0}", specificKey);
-                        continue;
-                    }
-                    manager.addAction(action);
+                        IAction action = parser.parse(value);
+                        if(action == null)
+                        {
+                            logger.log(Level.WARNING, "There was a problem loading the action subType {0}", specificKey);
+                            return;
+                        }
+                        manager.addAction(action);
+                    });
                 }
             }
         }

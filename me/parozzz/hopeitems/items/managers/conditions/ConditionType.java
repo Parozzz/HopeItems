@@ -8,7 +8,7 @@ package me.parozzz.hopeitems.items.managers.conditions;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import java.util.Optional;
 import java.util.function.Function;
-import me.parozzz.hopeitems.Dependency;
+import me.parozzz.hopeitems.hooks.Dependency;
 import me.parozzz.hopeitems.items.managers.ManagerUtils;
 import me.parozzz.reflex.configuration.ComplexMapList;
 import me.parozzz.reflex.configuration.MapArray;

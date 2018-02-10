@@ -5,15 +5,15 @@
  */
 package me.parozzz.hopeitems;
 
+import me.parozzz.hopeitems.hooks.Dependency;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+import java.util.stream.Stream.Builder;
 import javax.annotation.Nullable;
 import me.parozzz.hopeitems.items.BlockManager;
+import me.parozzz.hopeitems.items.database.DatabaseManager;
 import me.parozzz.hopeitems.items.listener.ItemListener;
 import me.parozzz.hopeitems.items.managers.IParser;
 import me.parozzz.hopeitems.items.managers.actions.parsers.ActionParser;
@@ -22,7 +22,6 @@ import me.parozzz.hopeitems.items.managers.cooldown.parser.CooldownParser;
 import me.parozzz.hopeitems.items.managers.explosive.ExplosiveManager;
 import me.parozzz.hopeitems.items.managers.lucky.LuckyManager;
 import me.parozzz.hopeitems.items.managers.mobs.parsers.MobManager;
-import me.parozzz.hopeitems.items.managers.mobs.abilities.parser.MobAbilityParser;
 import me.parozzz.hopeitems.items.managers.mobs.parsers.MobParser;
 import me.parozzz.hopeitems.shop.Shop;
 import me.parozzz.reflex.MCVersion;
@@ -30,10 +29,10 @@ import me.parozzz.reflex.ReflexAPI;
 import me.parozzz.reflex.ReflexAPI.Property;
 import me.parozzz.reflex.utilities.Util;
 import org.bukkit.Bukkit;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -48,19 +47,72 @@ public class HopeItems extends JavaPlugin
         return JavaPlugin.getPlugin(HopeItems.class);
     }
     
+    private DatabaseManager databaseManager;
+    private BlockManager blockManager;
     
     private ConditionParser conditionParser;
     private ActionParser actionParser;
     private MobParser mobParser;
     private CooldownParser cooldownParser;
+    
     @Override
     public void onLoad()
     {
+        this.getDataFolder().mkdir(); //Let me create the folder, otherwise the database initialization won't happend and will throw an error.
+        
+        databaseManager = new DatabaseManager(this);
+        blockManager = new BlockManager(databaseManager);
+        
         conditionParser = new ConditionParser();
         actionParser = new ActionParser();
         mobParser = new MobParser();
         cooldownParser = new CooldownParser();
+    }
+    
+    public @Nullable DatabaseManager getDatabaseManager()
+    {
+        this.validate(databaseManager);
+        return databaseManager;
+    }
+    
+    public @Nullable ConditionParser getConditionParser()
+    {
+        this.validate(conditionParser);
+        return conditionParser;
+    }
+    
+    public @Nullable ActionParser getActionParser()
+    {
+        this.validate(actionParser);
+        return actionParser;
+    }
+    
+    public @Nullable MobParser getMobParser()
+    {
+        this.validate(mobParser);  
+        return mobParser;
+    }
+    
+    public @Nullable CooldownParser getCooldownParser()
+    {
+        this.validate(cooldownParser);  
+        return cooldownParser;
+    }
+    
+    private void validate(final Object obj)
+    {
+        if(obj == null)
+        {
+            throw new RuntimeException("Trying to access HopeItems class before loading");
+        }
+    }
+    
+    @Override
+    public void onEnable()
+    {
+        ReflexAPI.getAPI().addProperty(Property.ENTITYPLAYER_LISTENER, Property.ARMOREVENTS_LISTENER);
         
+        //Setting up dependencies (WorldGuard and Vault)
         if(Dependency.setupEconomy())
         {
             logger.log(Level.INFO, "Hooked into Vault");
@@ -71,81 +123,53 @@ public class HopeItems extends JavaPlugin
             logger.log(Level.INFO, "Hooked into WorldGuard");
         }
         
+        this.saveDefaultConfig();
+        Dependency.setupClanHook(this.getConfig());
+        //Register default parsers after setting up dependencies.
         Stream.of(conditionParser, actionParser, mobParser, conditionParser).forEach(IParser::registerDefaultSpecificParsers);
-    }
-    
-    public @Nullable ConditionParser getConditionParser()
-    {
-        this.validateParser(conditionParser);
-        return conditionParser;
-    }
-    
-    public @Nullable ActionParser getActionParser()
-    {
-        this.validateParser(actionParser);
-        return actionParser;
-    }
-    
-    public @Nullable MobParser getMobParser()
-    {
-        this.validateParser(mobParser);  
-        return mobParser;
-    }
-    
-    public @Nullable CooldownParser getCooldownParser()
-    {
-        this.validateParser(cooldownParser);  
-        return cooldownParser;
-    }
-    
-    private void validateParser(final IParser parser)
-    {
-        if(parser == null)
-        {
-            throw new RuntimeException("Trying to access HopeItems class before loading");
-        }
-    }
-    private final File dataFile = new File(this.getDataFolder(), "data.yml");
-    @Override
-    public void onEnable()
-    {
-        ReflexAPI.getAPI().addProperty(Property.ENTITYPLAYER_LISTENER, Property.ARMOREVENTS_LISTENER);
         
+        //Loading up all the plugin features
         try {
-            this.saveDefaultConfig();
+            this.loadAllConfigs(false);
             if(getConfig().getBoolean("metric", true))
             {
                 new MetricsLite(this);
             }
             
-            Configs.initConfig(getConfig());
-            loadItems(false);
-            
-            MobManager.registerListener();
-            ExplosiveManager.registerListener();
-            LuckyManager.registerListener();
-            
-            dataFile.createNewFile();
-            FileConfiguration data = YamlConfiguration.loadConfiguration(dataFile);
-            BlockManager.getInstance().loadBlocks(data);
-            MobManager.loadData(data);
-            
-            if(Dependency.isEconomyHooked())
+            Builder<Listener> listenerBuilder = Stream.builder();
+            if(Bukkit.getServer().getVersion().contains("Paper") && MCVersion.V1_11.isHigher())
             {
-                Shop.getInstance().loadConfig();
-                Shop.registerListener();
+                logger.log(Level.INFO, "Using PaperSpigot 1.11+ EntityRemoveFromWorldEvent");
+                listenerBuilder.accept(MobManager.getPaperSpigotListener());
             }
+            listenerBuilder.add(MobManager.getListener())
+                    .add(ExplosiveManager.getListener())
+                    .add(LuckyManager.getListener())
+                    .add(new ItemListener(this, blockManager));
+            Util.ifCheck(MCVersion.V1_9.isHigher(), () -> listenerBuilder.accept(ItemListener.get1_9Listener(this)));
+            Util.ifCheck(Dependency.isEconomyHooked(), () -> listenerBuilder.add(Shop.getListener()));
+            listenerBuilder.build().forEach(listener -> Bukkit.getPluginManager().registerEvents(listener, this));
             
             Util.ifCheck(MCVersion.V1_8.isEqual(), () -> Util.registerArmorStandInvicibleListener());
             
-            Bukkit.getPluginManager().registerEvents(new ItemListener(this), this);
-            Util.ifCheck(MCVersion.V1_9.isHigher(), () -> ItemListener.register1_9Listener(this));
+            new ItemsCommand().registerCommand(this.getCommand("items"));
             
-            ItemsCommand itemsCommand = new ItemsCommand();
-            PluginCommand command = this.getCommand("items");
-            command.setExecutor(itemsCommand);
-            command.setTabCompleter(itemsCommand.getTabCompleter());
-            
+            File dataFile = new File(this.getDataFolder(), "data.yml");
+            if(dataFile.exists())
+            {
+                logger.log(Level.INFO, "Found data.yml file. Converting data from YAML file to SQLite");
+                
+                FileConfiguration data = YamlConfiguration.loadConfiguration(dataFile);
+                blockManager.convertFromFileToSql(data);
+                MobManager.convertYamlToSql(data);
+                
+                dataFile.delete();
+            }
+            else
+            {
+                blockManager.loadAllBlocks();
+                MobManager.loadAllMobs();
+            }
         }
         catch(final Exception t) {
             logger.log(Level.SEVERE, "Problem loading the plugin. Disabling it", t);
@@ -153,25 +177,15 @@ public class HopeItems extends JavaPlugin
         }
     }
     
-    public void reloadConfigurations()
+    public void loadAllConfigs(final boolean reload)
     {
-        FileConfiguration data = new YamlConfiguration();
-        BlockManager.getInstance().saveBlocks(data);
-        MobManager.saveData(data);
-        try  {
-            data.save(dataFile);
-        } 
-        catch (IOException ex) {
-            logger.log(Level.SEVERE, "Something went wrong during data saving", ex);
-        }
-        
-        this.reloadConfig();
         Configs.initConfig(this.getConfig());
-        this.loadItems(true);
+        this.loadItems(reload);
         
-        Shop.getInstance().loadConfig();
-        BlockManager.getInstance().loadBlocks(data);
-        MobManager.loadData(data);
+        if(Dependency.isEconomyHooked())
+        {  
+            Shop.getInstance().loadConfig(this);
+        }  
     }
     
     @Override
@@ -200,16 +214,6 @@ public class HopeItems extends JavaPlugin
     @Override
     public void onDisable()
     {
-        try {
-            FileConfiguration data = new YamlConfiguration();
-            BlockManager.getInstance().saveBlocks(data);
-            MobManager.saveData(data);
-            data.save(dataFile);
-        } 
-        catch (IOException ex) {
-            logger.log(Level.SEVERE, "Something went wrong during data saving on disable", ex);
-        }
-        
         HandlerList.unregisterAll(this);
     }
 }

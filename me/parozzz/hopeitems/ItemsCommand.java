@@ -5,6 +5,7 @@
  */
 package me.parozzz.hopeitems;
 
+import me.parozzz.hopeitems.hooks.Dependency;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -21,6 +22,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -84,6 +86,12 @@ public class ItemsCommand implements CommandExecutor
         }
     }
     
+    public void registerCommand(final PluginCommand command)
+    {
+        command.setExecutor(this);
+        command.setTabCompleter(new TabHandler());
+    }
+    
     @Override
     public boolean onCommand(CommandSender cs, Command cmnd, String string, String[] val) 
     {
@@ -112,7 +120,9 @@ public class ItemsCommand implements CommandExecutor
             switch(ce)
             {
                 case RELOAD:
-                    HopeItems.getInstance().reloadConfigurations();
+                    HopeItems hopeItems = HopeItems.getInstance();
+                    hopeItems.reloadConfig();
+                    hopeItems.loadAllConfigs(true);
                     cs.sendMessage(CommandMessageEnum.RELOADED.toString());
                     break;
                 case SHOPLIST:
@@ -129,7 +139,7 @@ public class ItemsCommand implements CommandExecutor
                     {
                         if(cs.hasPermission(new StringBuilder().append(ce.getPermission()).append(".").append(page.getName().toLowerCase()).toString()))
                         {
-                            ((Player)cs).openInventory(page.getInventory());
+                            page.openInventory((Player)cs);
                         }
                         return page;
                     }).orElseGet(() -> 
@@ -234,11 +244,6 @@ public class ItemsCommand implements CommandExecutor
         });
     }
     
-    public TabHandler getTabCompleter()
-    {
-        return new TabHandler();
-    }
-    
     public class TabHandler implements TabCompleter
     {
         @Override
@@ -260,7 +265,6 @@ public class ItemsCommand implements CommandExecutor
                 case GETITEM:
                     if(val.length == 2)
                     {
-                        Bukkit.getLogger().info("TAB: " + val[1]);
                         return val[1].isEmpty() 
                                 ? new ArrayList<>(ItemRegistry.getIds())
                                 : ItemRegistry.getIds().stream()

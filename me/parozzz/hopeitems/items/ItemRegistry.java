@@ -8,6 +8,8 @@ package me.parozzz.hopeitems.items;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  *
@@ -16,8 +18,13 @@ import java.util.Set;
 public class ItemRegistry 
 {
     private final static Map<String, ItemCollection> collections = new HashMap<>();
-    public static void addCollection(final ItemCollection collection)
+    public static void addCollection(final @Nonnull ItemCollection collection)
     {
+        if(collection == null)
+        {
+            return;
+        }
+        
         collections.put(collection.getId().toLowerCase(), collection);
     }
     
@@ -26,8 +33,13 @@ public class ItemRegistry
         return collections.keySet();
     }
     
-    public static ItemCollection getCollection(final String id)
+    public static @Nullable ItemCollection getCollection(final @Nonnull String id)
     {
+        if(id == null || id.isEmpty())
+        {
+            return null;
+        }
+        
         return collections.get(id.toLowerCase());
     }
     

@@ -234,7 +234,7 @@ public class Configs
                             r = new FurnaceRecipe(itemStack, source.getData());
                             break;
                         default:
-                            r = null;
+                            return;
                     }
                     Bukkit.addRecipe(r); 
                 } catch(final Exception ex) {

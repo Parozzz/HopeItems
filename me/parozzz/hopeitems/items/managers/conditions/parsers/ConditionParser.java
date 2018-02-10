@@ -15,7 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
-import me.parozzz.hopeitems.Dependency;
+import me.parozzz.hopeitems.hooks.Dependency;
 import me.parozzz.hopeitems.items.managers.IParser;
 import me.parozzz.hopeitems.items.managers.ISpecificParser;
 import me.parozzz.hopeitems.items.managers.ManagerUtils;

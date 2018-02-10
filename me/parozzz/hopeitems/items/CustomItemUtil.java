@@ -6,9 +6,12 @@
 package me.parozzz.hopeitems.items;
 
 import java.util.Set;
+import javax.annotation.Nullable;
 import me.parozzz.hopeitems.items.ItemInfo.When;
-import me.parozzz.reflex.NMS.itemStack.ItemNBT;
+import me.parozzz.reflex.NMS.itemStack.NMSStack;
+import me.parozzz.reflex.NMS.itemStack.NMSStackCompound;
 import me.parozzz.reflex.NMS.nbt.NBTCompound;
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
 /**
@@ -23,17 +26,38 @@ public class CustomItemUtil
     
     public static void addCustomTag(final ItemStack item, final String name)
     {
-        ItemNBT nbt = new ItemNBT(item);
+        NMSStackCompound tag = new NMSStackCompound(item);
 
         NBTCompound customCompound = new NBTCompound();
         customCompound.setString(ID, name);
-        nbt.getTag().setTag(CUSTOM_NBT, customCompound);
+        tag.setTag(CUSTOM_NBT, customCompound);
         
-        item.setItemMeta(nbt.getBukkitItem().getItemMeta());
+        item.setItemMeta(tag.getItemStack().getItemMeta());
+    }
+    
+    public static @Nullable String getItemCollectionId(final @Nullable ItemStack itemStack)
+    {
+        if(itemStack == null || itemStack.getType() == Material.AIR)
+        {
+            return null;
+        }
+        
+        NBTCompound tag = new NMSStackCompound(itemStack);
+        if(!tag.hasKey(CustomItemUtil.CUSTOM_NBT))
+        {
+            return null;
+        }
+        
+        return tag.getCompound(CustomItemUtil.CUSTOM_NBT).getString(CustomItemUtil.ID);
+    }
+    
+    public static @Nullable ItemCollection getItemCollection(final @Nullable ItemStack itemStack)
+    {
+        return ItemRegistry.getCollection(getItemCollectionId(itemStack));
     }
     
     public static boolean hasCustomTag(final ItemStack item)
     {
-        return new ItemNBT(item).getTag().hasKey(CUSTOM_NBT);
+        return new NMSStack(item).getTag().hasKey(CUSTOM_NBT);
     }
 }

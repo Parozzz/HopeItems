@@ -98,9 +98,9 @@ public class ExplosiveManager
         ent.setMetadata(ExplosiveMetadata.METADATA, new FixedMetadataValue(plugin, meta));
     }
     
-    public static void registerListener()
+    public static Listener getListener()
     {
-        Bukkit.getPluginManager().registerEvents(new Listener()
+       return new Listener()
         {
             @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
             private void onEntityExplode(final EntityExplodeEvent e)
@@ -138,6 +138,6 @@ public class ExplosiveManager
                     e.setRadius(meta.power);
                 }
             }
-        }, JavaPlugin.getProvidingPlugin(ExplosiveManager.class));
+        };
     }
 }

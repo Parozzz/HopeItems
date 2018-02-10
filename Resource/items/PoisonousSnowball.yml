@@ -4,9 +4,9 @@ Item:
   lore:
     - "&7Hit something to give poisoning!"
 
-projectile: #This effects will be triggered for both projectile and dropongrond when
+projectile:
   removeOnUse: true
   projectileDamageType: damaged
   Action:
     mob:
-      potion: type:poison,duration:10,level:1
+      - addPotion: type:poison,duration:10,level:1

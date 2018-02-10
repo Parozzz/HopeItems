@@ -1,6 +1,7 @@
 metric: true #Send data to bStats for monitoring plugin usage
 debug: false #Set in debug mode. Console spam alert.
 overridePvpProtection: false #If the plugin should apply effect to players even if the pvp is disabled
+clanProtectionPriority: none #You can choose mcmmo or factions.
 Messages:
   Shop:
     low_money: "&cYou don't have enough money. &7Needed: &2&l{money}"

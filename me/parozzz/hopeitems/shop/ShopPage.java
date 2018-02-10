@@ -8,27 +8,28 @@ package me.parozzz.hopeitems.shop;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import me.parozzz.hopeitems.Configs;
-import me.parozzz.hopeitems.Dependency;
-import me.parozzz.hopeitems.items.HItem;
+import me.parozzz.hopeitems.hooks.Dependency;
+import me.parozzz.hopeitems.items.CustomItemUtil;
 import me.parozzz.hopeitems.items.ItemCollection;
-import me.parozzz.hopeitems.items.ItemInfo;
 import me.parozzz.hopeitems.items.ItemRegistry;
 import me.parozzz.hopeitems.shop.Shop.ShopMessage;
 import me.parozzz.reflex.Debug;
-import me.parozzz.reflex.NMS.itemStack.ItemNBT;
+import me.parozzz.reflex.NMS.itemStack.NMSStack;
 import me.parozzz.reflex.NMS.nbt.NBTCompound;
-import me.parozzz.reflex.NMS.nbt.NBTType;
 import me.parozzz.reflex.utilities.ItemUtil;
 import me.parozzz.reflex.utilities.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 /**
@@ -54,7 +55,7 @@ public class ShopPage
     protected ShopPage(final String name, final ConfigurationSection path)
     {
         this.name=name;
-        i = Bukkit.createInventory(null, path.getInt("rows")*9, Util.cc(path.getString("title")));
+        i = Bukkit.createInventory(new ShopHolder(), path.getInt("rows")*9, Util.cc(path.getString("title")));
         
         ConfigurationSection iPath=path.getConfigurationSection("Items");
         iPath.getKeys(false).stream().map(iPath::getConfigurationSection).forEach(sPath -> 
@@ -64,7 +65,7 @@ public class ShopPage
             
             ShopFunction f = Debug.validateEnum(sPath.getString("function"), ShopFunction.class);
             
-            ItemNBT nbt=new ItemNBT(item);
+            NMSStack nbt=new NMSStack(item);
             NBTCompound tag=nbt.getTag();
             
             tag.setString(FUNCTION_NBT, f.name());
@@ -97,20 +98,20 @@ public class ShopPage
         return name;
     }
     
-    public Inventory getInventory()
+    public void openInventory(final HumanEntity he)
     {
-        return i;
+        he.openInventory(i);
     }
     
-    public void onEvent(final InventoryClickEvent e)
+    protected void onEvent(final InventoryClickEvent e)
     {
         e.setCancelled(true);
-        if(!e.getInventory().equals(e.getClickedInventory()) || e.getCurrentItem().getType()==Material.AIR)
+        if(!e.getInventory().equals(e.getClickedInventory()) || e.getCurrentItem().getType() == Material.AIR)
         {
             return;
         }
         
-        ItemNBT nbt=new ItemNBT(e.getCurrentItem());
+        NMSStack nbt=new NMSStack(e.getCurrentItem());
         NBTCompound tag=nbt.getTag();
         
         ShopFunction f = ShopFunction.valueOf(tag.getString(FUNCTION_NBT));
@@ -118,22 +119,24 @@ public class ShopPage
         {
             case SHOP:
                 Optional.ofNullable(Shop.getInstance().getPageByName(tag.getString(SHOP_NBT)))
-                        .ifPresent(page -> e.getWhoClicked().openInventory(page.getInventory()));
+                        .ifPresent(page -> page.openInventory(e.getWhoClicked()));
                 break;
             case SELL:
                 Optional.ofNullable(ItemRegistry.getCollection(tag.getString(CUSTOMITEM_NBT))).ifPresent(collection -> 
                 {
                     double cost=tag.getDouble(COST_NBT);
                     
-                    double toGive = Stream.of(e.getWhoClicked().getInventory().getContents()).filter(Objects::nonNull)
-                            .map(HItem::new)
-                            .filter(HItem::isValid)
-                            .filter(h -> h.getStringId().equals(collection.getId()))
-                            .mapToDouble(hitem -> 
-                            {
-                                ItemUtil.decreaseItemStack(hitem.getItem(), e.getWhoClicked().getInventory());
-                                return hitem.getItem().getAmount() * cost;
-                            }).sum();
+                    double toGive = 0D;
+                    for(ItemStack itemStack : e.getWhoClicked().getInventory().getContents())
+                    {
+                        if(itemStack != null 
+                                && collection.getId().equals(CustomItemUtil.getItemCollectionId(itemStack))) //Check if the collection unique id is the same of the item
+                        {
+                            ItemUtil.decreaseItemStack(itemStack, e.getWhoClicked().getInventory());
+                            toGive += itemStack.getAmount() * cost;
+                        }
+                    }
+                    
                     Dependency.economy.depositPlayer((Player)e.getWhoClicked(), toGive);
                 });
                 break;
@@ -155,5 +158,21 @@ public class ShopPage
                 }
                 break;
         }
+    }
+    
+    public class ShopHolder implements InventoryHolder
+    {
+
+        public ShopPage getShop()
+        {
+            return ShopPage.this;
+        }
+        
+        @Override
+        public Inventory getInventory() 
+        {
+            return getShop().i;
+        }
+        
     }
 }

@@ -98,7 +98,6 @@ public class ManagerUtils
         }
         
         int amount = map.getValue("amount", Integer::valueOf);
-        
         return l -> IntStream.range(0, amount).forEach(x -> l.getWorld().spawnEntity(l, et));
     }
     
