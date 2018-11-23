@@ -202,7 +202,7 @@ public class ItemListener implements Listener
                     case ARROW:
                         proj = ListenerUtils.shootArrow(used, d.getBlockProjectileSource());
                         break;
-                    case SNOW_BALL:
+                    case SNOWBALL:
                         proj = d.getBlockProjectileSource().launchProjectile(Snowball.class);
                         break;
                     default:
@@ -273,7 +273,7 @@ public class ItemListener implements Listener
                     e.setCancelled(this.onPotionSpawn((ThrownPotion)e.getEntity(), When.LINGERING, p));
                     break;
                 case ENDER_PEARL:
-                case SNOW_BALL:
+                case SNOWBALL:
                     Optional.ofNullable(ListenerUtils.checkHands(p, projectileType.getMaterial()))
                             .map(item -> onProjectileSpawn(item, p, e.getEntity()))
                             .ifPresent(e::setCancelled);

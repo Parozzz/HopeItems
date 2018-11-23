@@ -71,8 +71,10 @@ public class ExplosiveManager
         modifierRange = path.getInt("modifierRange", -1);
         
         modifier = (e, set) -> {};
+        System.out.println(path);
         new ComplexMapList(path.getMapList("modifier")).getView().entrySet().forEach(e -> 
         {
+        	System.out.println(e.getKey());
             ExplosionModifier modifierEnum = Debug.validateEnum(e.getKey(), ExplosionModifier.class);
             e.getValue().forEach(map -> modifier = modifier.andThen(modifierEnum.getConsumer(map)));
         });

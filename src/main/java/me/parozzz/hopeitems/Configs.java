@@ -104,6 +104,7 @@ public class Configs
             
             String id = file.getName().replace(".yml", "");
             FileConfiguration config = Util.loadUTF(file);
+            System.out.println("reading file: " + file.getName());
             if(config == null)
             {
                 logger.log(Level.SEVERE, "An error occoured while parsing YAML file for {0}. Skipping.", id);
@@ -170,7 +171,7 @@ public class Configs
                 Optional.ofNullable(path.getConfigurationSection("Mob"))
                         .map(hopeItems.getMobParser()::parse)
                         .ifPresent(info::setMobManager);
-                
+                System.out.println(pathName);
                 Optional.ofNullable(path.getConfigurationSection("Explosive")).ifPresent(ePath -> info.setExplosiveManager(new ExplosiveManager(ePath)));
                 Optional.ofNullable(path.getConfigurationSection("Lucky")).ifPresent(lPath -> info.setLuckyManager(new LuckyManager(lPath)));
                 

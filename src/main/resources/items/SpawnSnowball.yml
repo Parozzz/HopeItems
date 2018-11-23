@@ -1,5 +1,5 @@
 Item:
-  id: snow_ball
+  id: snowball
   name: "&2Zombie &fSnowball"
   lore:
     - "&7Throw it to spawn a zombie!"

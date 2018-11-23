@@ -33,7 +33,7 @@ public class ListenerUtils
         ARROW(Material.ARROW),
         TIPPED_ARROW(Util.ifCheck(MCVersion.V1_9.isHigher(), () -> Material.TIPPED_ARROW, () -> null)),
         SPECTRAL_ARROW(Util.ifCheck(MCVersion.V1_9.isHigher(), () -> Material.SPECTRAL_ARROW, () -> null)),
-        SNOW_BALL(Material.LEGACY_SNOW_BALL),
+        SNOWBALL(Material.SNOWBALL),
         ENDER_PEARL(Material.ENDER_PEARL),
         SPLASH_POTION(Util.ifCheck(MCVersion.V1_9.isHigher(), () -> Material.SPLASH_POTION, () -> Material.POTION)),
         LINGERING_POTION(Util.ifCheck(MCVersion.V1_9.isHigher(), () -> Material.LINGERING_POTION, () -> null)),
@@ -63,8 +63,8 @@ public class ListenerUtils
                     return ARROW;
                 case ENDER_PEARL:
                     return ENDER_PEARL;
-                case LEGACY_SNOW_BALL:
-                    return SNOW_BALL;
+                case SNOWBALL:
+                    return SNOWBALL;
             }
             
             if(MCVersion.V1_9.isHigher())
@@ -92,7 +92,7 @@ public class ListenerUtils
                 case SPLASH_POTION:
                     return SPLASH_POTION;
                 case SNOWBALL:
-                    return SNOW_BALL;
+                    return SNOWBALL;
                 case ENDER_PEARL:
                     return ENDER_PEARL;
             }

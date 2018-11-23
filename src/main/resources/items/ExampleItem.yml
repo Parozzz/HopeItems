@@ -70,7 +70,7 @@ all: #This is the when for this set of options. If you select ALL, effects will 
       - stacker: type:sand,height:4
       - potion: type:poison,duration:30,level:1
       - fire: duration:10~15
-      - transmutation: from:water;stationary_water,to:air,range:4
+      - transmutation: from:water,to:air,range:4
       - spawn: type:wither,quantity:1,lifetime:30 #Set lifetime to -1 to remove it
       - thunder: damage:true
   Mob:
