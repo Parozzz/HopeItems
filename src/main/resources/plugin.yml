@@ -1,0 +1,12 @@
+name: HopeItems
+api-version: 1.13
+version: 3_BETA1.3
+author: Parozzz
+main: me.parozzz.hopeitems.HopeItems
+commands:
+  items:
+    aliases: [hpi]
+    Usage: /items
+    Description: Main Command
+depend: [ReflexAPI]
+softdepend: [Multiverse-Core, Vault, WorldGuard, Factions, mcMMO]

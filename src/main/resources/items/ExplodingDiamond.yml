@@ -1,0 +1,36 @@
+Item:
+  id: diamond
+  name: "&cExploding &fDiamond"
+  lore:
+    - "&7Throw it to create an explosion"
+  amount: 1
+  unbreakable: true
+  flag:
+    - hide_unbreakable
+    - hide_enchants
+  enchant:
+    - arrow_fire: 1
+    - durability: 1
+    
+Cooldown:
+  default: 120 #Default time without any perms
+  message: "&cYou are on cooldown. &fWait &l&f{time}" #Message on cooldown. Set to "" to disable
+  permissions: 
+    - explodingdiamond.vip.cooldown: 100 #permission: timeToWait
+    - explodingdiamond.vip+.cooldown: 80
+    - explodingdiamond.vip++.cooldown: 60
+      
+drop:
+  removeOnUse: false
+  Action:
+    player:
+      - title: title:&cWatchout for the explosion!,in:10,stay:20,out:10
+      
+droponground:
+  removeOnUse: true
+  Action:
+    player:
+      - chat: "&fI made explode an &cExploding &fDiamond at &7{world} &fat &7{x} {y} {z}!"
+    worldEffect:
+      - thunder: false
+      - explosion: power:5,fire:true,damage:false

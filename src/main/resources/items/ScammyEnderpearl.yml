@@ -1,0 +1,22 @@
+Item:
+  id: ender_pearl
+  name: "&cScammy &dEnderPearl"
+  lore:
+    - "&7Is infinite, but does it worth it?"
+    - "&7Left click to learn more"
+    
+leftinteract:
+  removeOnUse: false
+  Action:
+    player:
+      - message: "&7This enderpearl will reveal your location in chat"
+      - message: "&7But beware! It will be disguised as you!"
+      
+projectile:
+  removeOnUse: false
+  projectileDamageType: shooter
+  Action:
+    player:
+      - chat: "&dHey pss, &fi am in &7{world} &fat &7{x} {y} {z}!"
+    worldEffect:
+      - particle: name:spell_witch,effect:static,quantity:100
