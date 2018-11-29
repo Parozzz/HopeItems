@@ -1,0 +1,27 @@
+metric: true #Send data to bStats for monitoring plugin usage
+debug: false #Set in debug mode. Console spam alert.
+overridePvpProtection: false #If the plugin should apply effect to players even if the pvp is disabled
+clanProtectionPriority: none #You can choose mcmmo or factions.
+Messages:
+  Shop:
+    low_money: "&cYou don't have enough money. &7Needed: &2&l{money}"
+    item_bought: "&fRemains: &2&l{balance}"
+CommandMessages:
+  Help:
+    getitem: "&b/items getitem *itemname* <amount>"
+    giveitem: "&b/items giveitem *player* *itemname* <amount>"
+    execute: "&b/items execute *player* *itemName* *when* <-c>"
+    shop: "&b/items shop *shopName*"
+    shoplist: "&b/items shoplist"
+    list: "&b/items list"
+    reload: "&b/items reload"
+  Others:
+    wrong_command: "&cWrong command format"
+    wrong_item: "&cThat item name does not exist"
+    wrong_when: "&cA when with that name does not exist"
+    player_offline: "&cSelected player is offline"
+    item_received: "&fYou received a %name% &6x%amount%"
+    item_sent: "&fYou sent a hopeitem named %name% &6x%amount% &fto %player%"
+    reloaded: "&2Succesfully reloaded the plugin"
+    reload_fail: "&cSomething went wront during plugin reloading"
+    shop_inexistent: "&cA shop with that does not exist"

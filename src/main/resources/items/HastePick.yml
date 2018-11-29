@@ -1,0 +1,24 @@
+Item:
+  id: diamond_pickaxe
+  name: "&6Haste &7Pick"
+  lore:
+    - "&7Mine with it for gaining haste"
+
+enchantable: false
+    
+mine: #This is the when. You can compress more than one when at the item by splitting them with a ","
+  chance: 10
+  Action:
+    player:
+      - addPotion: type:fast_digging,duration:10,level:0
+      
+Crafting:
+  type: shaped
+  shape:
+    - asa
+    - sis
+    - asa
+  material:
+    a: air:0
+    i: diamond_pickaxe:0
+    s: feather:0

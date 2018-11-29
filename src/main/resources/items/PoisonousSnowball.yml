@@ -1,0 +1,12 @@
+Item:
+  id: snowball
+  name: "&2Poisonous &fSnowball"
+  lore:
+    - "&7Hit something to give poisoning!"
+
+projectile:
+  removeOnUse: true
+  projectileDamageType: damaged
+  Action:
+    mob:
+      - addPotion: type:poison,duration:10,level:1
